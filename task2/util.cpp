@@ -13,7 +13,6 @@ void drawSphere();
 void drawPositiveX();
 void drawHalfOctahedron();
 void drawOctahedron();
-void printCornerCoordinates();
 vector<float> buildUnitPositiveX();
 // Global variables for triangle
 float centroidX;
@@ -151,38 +150,62 @@ void drawHalfOctahedron() {
     glRotated(90, 0, 1, 0);
     glColor3f(1, 0, 1);  // magenta
     drawTriangle();
+    glRotated(90, 0, 1, 0);
 }
 void drawOctahedron() {
     drawHalfOctahedron();
     glPushMatrix();
+    glRotated(90, 0, 1, 0);
     glScalef(1, -1, 1);  // mirror along XZ plane
     drawHalfOctahedron();
     glPopMatrix();
 }
 void drawSphere() {
-    glColor3f(0.3, 0.3, 0.3);
+    glColor3f(0, 1, 0);
+    glPushMatrix();
+    glTranslated(shrinkFactor, 0, 0);
+    glScaled(1 - shrinkFactor, 1 - shrinkFactor, 1 - shrinkFactor);
     drawPositiveX();  // +X
+    glPopMatrix();
 
-    // glColor3f(0, 0, 1);
-    // glRotated(90, 0, 1, 0);
-    // drawPositiveX();  // -Z
+    glColor3f(0, 0, 1);
+    glPushMatrix();
+    glRotated(90, 0, 1, 0);
+    glTranslated(shrinkFactor, 0, 0);
+    glScaled(1 - shrinkFactor, 1 - shrinkFactor, 1 - shrinkFactor);
+    drawPositiveX();  // -Z
+    glPopMatrix();
 
-    // glColor3f(0, 1, 0);
-    // glRotated(90, 0, 1, 0);
-    // drawPositiveX();  // -X
+    glColor3f(0, 1, 0);
+    glPushMatrix();
+    glRotated(180, 0, 1, 0);
+    glTranslated(shrinkFactor, 0, 0);
+    glScaled(1 - shrinkFactor, 1 - shrinkFactor, 1 - shrinkFactor);
+    drawPositiveX();  // -X
+    glPopMatrix();
 
-    // glColor3f(0, 0, 1);
-    // glRotated(90, 0, 1, 0);
-    // drawPositiveX();  // +Z
-    // glRotated(90, 0, 1, 0);
+    glColor3f(0, 0, 1);
+    glPushMatrix();
+    glRotated(-90, 0, 1, 0);
+    glTranslated(shrinkFactor, 0, 0);
+    glScaled(1 - shrinkFactor, 1 - shrinkFactor, 1 - shrinkFactor);
+    drawPositiveX();  // +Z
+    glPopMatrix();
 
-    // glPushMatrix();
-    // glColor3f(1, 0, 0);
-    // glRotated(90, 0, 0, 1);
-    // drawPositiveX();  // +Y
-    // glRotated(180, 0, 0, 1);
-    // drawPositiveX();  // -Y
-    // glPopMatrix();
+    glPushMatrix();
+    glColor3f(1, 0, 0);
+    glRotated(90, 0, 0, 1);
+    glTranslated(shrinkFactor, 0, 0);
+    glScaled(1 - shrinkFactor, 1 - shrinkFactor, 1 - shrinkFactor);
+    drawPositiveX();  // +Y
+    glPopMatrix();
+
+    glPushMatrix();
+    glRotated(-90, 0, 0, 1);
+    glTranslated(shrinkFactor, 0, 0);
+    glScaled(1 - shrinkFactor, 1 - shrinkFactor, 1 - shrinkFactor);
+    drawPositiveX();  // -Y
+    glPopMatrix();
 }
 void drawPositiveX() {
     // draw the filled sphere from vertices
@@ -210,58 +233,8 @@ void drawPositiveX() {
         glVertex3f(x3, y3, z3);
     }
     glEnd();
-    glPointSize(5);
-    float r = 1;
-    float g = 0;
-    float b = 0;
-    glBegin(GL_POINTS);
-    for (int i = 0; i < vertices.size(); i += 3) {
-        // change color every 2 vertices
-        if (i % 6 == 0) {
-            if (r == 1) {
-                r = 0;
-                g = 1;
-                b = 0;
-            } else if (g == 1) {
-                r = 0;
-                g = 0;
-                b = 1;
-            } else {
-                r = 1;
-                g = 0;
-                b = 0;
-            }
-            glColor3f(r, g, b);
-        }
-        if (i == 0) glColor3f(1, 1, 0);
-        glVertex3f(vertices[i], vertices[i + 1], vertices[i + 2]);
-    }
-    glEnd();
 }
 void drawCylinder() {}
-void printCornerCoordinates() {
-    float x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4;
-    vector<float> vertices = verticesXPos;
-    int pointsPerRow = (int)pow(2, subdivision) + 1;
-    int totalPoints = vertices.size() / 3;
-    int numRows = totalPoints / pointsPerRow;
-    x1 = vertices[0];
-    y1 = vertices[1];
-    z1 = vertices[2];
-    x2 = vertices[pointsPerRow - 3];
-    y2 = vertices[pointsPerRow - 2];
-    z2 = vertices[pointsPerRow - 1];
-    x3 = vertices[(numRows - 1) * pointsPerRow];
-    y3 = vertices[(numRows - 1) * pointsPerRow + 1];
-    z3 = vertices[(numRows - 1) * pointsPerRow + 2];
-    x4 = vertices[(numRows - 1) * pointsPerRow + pointsPerRow - 3];
-    y4 = vertices[(numRows - 1) * pointsPerRow + pointsPerRow - 2];
-    z4 = vertices[(numRows - 1) * pointsPerRow + pointsPerRow - 1];
-    printf("(%.3f, %.3f, %.3f)\n", x1, y1, z1);
-    printf("(%.3f, %.3f, %.3f)\n", x2, y2, z2);
-    printf("(%.3f, %.3f, %.3f)\n", x3, y3, z3);
-    printf("(%.3f, %.3f, %.3f)\n", x4, y4, z4);
-}
 
 // generate vertices for +X face only by intersecting 2 circular planes
 // (longitudinal and latitudinal) at the given longitude/latitude angles
