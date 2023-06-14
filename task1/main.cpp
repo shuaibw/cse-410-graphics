@@ -165,7 +165,7 @@ int main(int argc, char** argv) {
     buff = (char*)malloc(12 * sizeof(char));
     std::time_t t = std::time(0);  // get time now
     std::tm* now = std::localtime(&t);
-    h = 00;
+    h = now->tm_hour;
     m = now->tm_min;
     s = now->tm_sec;
     if (h == 0) {
