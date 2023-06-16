@@ -42,6 +42,7 @@ void display() {
     drawOctahedron();
     drawSphere();
     drawCylinder();
+    
     glutSwapBuffers();  // Render now
 }
 
@@ -171,10 +172,12 @@ void initGlobalVars() {
     centroidZ = (0.0 + 0.0 + 1.0) / 3.0;
     shrinkFactor = 1.0;
     // Sphere
-    subdivision = 3;
+    subdivision = 4;
     radius = sqrt(centroidX * centroidX + centroidY * centroidY + centroidZ * centroidZ);
-    // radius = 1;
     verticesXPos = buildUnitPositiveX();
+    // cylinder
+    cr = radius;
+    ch = sqrt(2);
 }
 /* Main function: GLUT runs as a console application starting at main()  */
 int main(int argc, char** argv) {

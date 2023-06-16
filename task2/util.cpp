@@ -13,6 +13,10 @@ void drawSphere();
 void drawPositiveX();
 void drawHalfOctahedron();
 void drawOctahedron();
+void drawCurvedSurface();
+void transformCylinder();
+void fillUpperCyl();
+void fillPosXCyl();
 vector<float> buildUnitPositiveX();
 // Global variables for triangle
 float centroidX;
@@ -24,6 +28,10 @@ float shrinkFactor;
 vector<float> verticesXPos;
 int subdivision;
 float radius;
+
+// Global variables for cylinder
+float cr;  // cylinder radius
+float ch;  // cylinder height
 
 /* Draw axes: X in Red, Y in Green and Z in Blue */
 void drawAxes() {
@@ -233,9 +241,114 @@ void drawPositiveX() {
         glVertex3f(x3, y3, z3);
     }
     glEnd();
+    // glPointSize(3);
+    // float r = 1;
+    // float g = 0;
+    // float b = 0;
+    // glBegin(GL_POINTS);
+    // for (int i = 0; i < vertices.size(); i += 3) {
+    //     // change color every 2 vertices
+    //     if (i % 6 == 0) {
+    //         if (r == 1) {
+    //             r = 0;
+    //             g = 1;
+    //             b = 0;
+    //         } else if (g == 1) {
+    //             r = 0;
+    //             g = 0;
+    //             b = 1;
+    //         } else {
+    //             r = 1;
+    //             g = 0;
+    //             b = 0;
+    //         }
+    //         glColor3f(r, g, b);
+    //     }
+    //     if (i == 0) glColor3f(1, 1, 0);
+    //     glVertex3f(vertices[i], vertices[i + 1], vertices[i + 2]);
+    // }
+    // glEnd();
 }
-void drawCylinder() {}
+void drawCylinder() {
+    fillUpperCyl();
+    glPushMatrix();
+    glScaled(1, -1, 1);  // mirror along XZ plane
+    fillUpperCyl();
+    glPopMatrix();
 
+    fillPosXCyl();
+    glPushMatrix();
+    glScaled(-1, 1, 1); // mirror along YZ plane
+    fillPosXCyl();
+    glPopMatrix();
+}
+void fillUpperCyl(){
+    transformCylinder();
+    glRotated(90, 0, 1, 0);
+    transformCylinder();
+    glRotated(90, 0, 1, 0);
+    transformCylinder();
+    glRotated(90, 0, 1, 0);
+    transformCylinder();
+    glRotated(90, 0, 1, 0);
+}
+void fillPosXCyl(){
+    glPushMatrix();
+    glRotated(90, 1, 0 ,0 );
+    transformCylinder();
+    glPopMatrix();
+    glPushMatrix();
+    glRotated(-90, 1, 0 ,0 );
+    transformCylinder();
+    glPopMatrix();
+}
+void transformCylinder() {
+    cr = sqrt(1.0 / 3.0) * (1 - shrinkFactor);
+    ch = sqrt(2) * shrinkFactor;
+    glPushMatrix();
+    glRotated(45, 0, 0, 1);
+    glTranslated(shrinkFactor / sqrt(2), 0, 0);
+    drawCurvedSurface();
+    glPopMatrix();
+}
+void drawCurvedSurface() {
+    float dTheta = 5.0;
+    float PI = acos(-1);
+    for (int theta = -35; theta < 35.2; theta += dTheta) {
+        if (theta % 10 == 0)
+            glColor3f(1, 1, 1);
+        else
+            glColor3f(1, 0.59, 0.67);
+        float start = theta * PI / 180.0;
+        float end = (theta + dTheta) * PI / 180.0;
+        glBegin(GL_QUADS);
+        glVertex3f(cr * cos(start), ch / 2, cr * sin(start));
+        glVertex3f(cr * cos(end), ch / 2, cr * sin(end));
+        glVertex3f(cr * cos(end), -ch / 2, cr * sin(end));
+        glVertex3f(cr * cos(start), -ch / 2, cr * sin(start));
+        glEnd();
+    }
+    float theta = -35;
+    dTheta = -0.2644;
+    float start = theta * PI / 180.0;
+    float end = (theta + dTheta) * PI / 180.0;
+    glBegin(GL_QUADS);
+    glVertex3f(cr * cos(start), ch / 2, cr * sin(start));
+    glVertex3f(cr * cos(end), ch / 2, cr * sin(end));
+    glVertex3f(cr * cos(end), -ch / 2, cr * sin(end));
+    glVertex3f(cr * cos(start), -ch / 2, cr * sin(start));
+    glEnd();
+    theta = 35;
+    dTheta = 0.2644;
+    start = theta * PI / 180.0;
+    end = (theta + dTheta) * PI / 180.0;
+    glBegin(GL_QUADS);
+    glVertex3f(cr * cos(start), ch / 2, cr * sin(start));
+    glVertex3f(cr * cos(end), ch / 2, cr * sin(end));
+    glVertex3f(cr * cos(end), -ch / 2, cr * sin(end));
+    glVertex3f(cr * cos(start), -ch / 2, cr * sin(start));
+    glEnd();
+}
 // generate vertices for +X face only by intersecting 2 circular planes
 // (longitudinal and latitudinal) at the given longitude/latitude angles
 vector<float> buildUnitPositiveX() {
