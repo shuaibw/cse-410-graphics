@@ -49,7 +49,6 @@ double hour_y;
 void hand_anim();
 void pendulum_anim();
 void timer(int value);
-void set_hand_angles();
 
 void reshape(GLsizei width, GLsizei height) {
     if (height == 0) height = 1;  // To prevent divide by 0
@@ -156,7 +155,7 @@ void display() {
     buff[9] = AM[0];
     buff[10] = AM[1];
     buff[11] = '\0';
-    text(500, 650, buff, GLUT_BITMAP_TIMES_ROMAN_24);
+    text(335, 650, buff, GLUT_BITMAP_TIMES_ROMAN_24);
     glutSwapBuffers();  // Swap front and back buffers (of double buffered mode)
 }
 
@@ -170,7 +169,7 @@ int main(int argc, char** argv) {
     s = now->tm_sec;
     if (h == 0) {
         h = 12;
-        AM = "PM";
+        AM = "AM";
     } else if (h > 12) {
         h -= 12;
         AM = "PM";

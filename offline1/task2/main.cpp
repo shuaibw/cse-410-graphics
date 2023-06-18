@@ -14,7 +14,7 @@ void initGL() {
 GLfloat eyex = 4, eyey = 4, eyez = 4;
 GLfloat centerx = 0, centery = 0, centerz = 0;
 GLfloat upx = 0, upy = 1, upz = 0;
-bool isAxes = true, isCube = false, isPyramid = false;
+bool isAxes = true;
 
 /*  Handler for window-repaint event. Call back when the window first appears and
     whenever the window needs to be re-painted. */
@@ -34,11 +34,6 @@ void display() {
     // draw
     if (isAxes)
         drawAxes();
-    if (isCube)
-        drawCube();
-    if (isPyramid)
-        drawPyramid();
-
     drawOctahedron();
     drawSphere();
     drawCylinder();
@@ -58,7 +53,7 @@ void reshapeListener(GLsizei width, GLsizei height) {  // GLsizei for non-negati
 
 /* Callback handler for normal-key event */
 void keyboardListener(unsigned char key, int x, int y) {
-    float v = 0.1;
+    float v = 0.05;
     switch (key) {
         // Control shrinkFactor for triangle
         case ',':
@@ -116,12 +111,6 @@ void keyboardListener(unsigned char key, int x, int y) {
         // Control what is shown
         case 'a':
             isAxes = !isAxes;  // show/hide Axes if 'a' is pressed
-            break;
-        case 'c':
-            isCube = !isCube;  // show/hide Cube if 'c' is pressed
-            break;
-        case 'p':
-            isPyramid = !isPyramid;  // show/hide Pyramid if 'p' is pressed
             break;
 
         // Control exit
