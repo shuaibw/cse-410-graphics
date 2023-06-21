@@ -15,12 +15,9 @@ void drawCurvedSurface();
 void transformCylinder();
 void fillUpperCyl();
 void fillPosXCyl();
-void crossProduct(float dirx, float diry, float dirz, float upx, float upy, float upz, float* right);
 vector<float> buildUnitPositiveX();
 // MATH consts
 float PI = acos(-1);
-// camera vectors
-float* camRight;
 
 // Global variables for triangle
 float centroidX;
@@ -322,15 +319,4 @@ vector<float> buildUnitPositiveX() {
     }
 
     return vertices;
-}
-
-void crossProduct(float dirx, float diry, float dirz, float upx, float upy, float upz, float* right) {
-    float* result = right;
-    result[0] = diry * upz - dirz * upy;
-    result[1] = dirz * upx - dirx * upz;
-    result[2] = dirx * upy - diry * upx;
-    float scale = 1 / sqrt(result[0] * result[0] + result[1] * result[1] + result[2] * result[2]);
-    result[0] *= scale;
-    result[1] *= scale;
-    result[2] *= scale;
 }

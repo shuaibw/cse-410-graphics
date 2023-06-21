@@ -11,11 +11,13 @@ void initGL() {
     glEnable(GL_DEPTH_TEST);               // Enable depth testing for z-culling
 }
 // Global variables
-GLfloat eyex = 4, eyey = 4, eyez = 4;
-GLfloat centerx = 0, centery = 0, centerz = 0;
-GLfloat upx = 0, upy = 1, upz = 0;
-GLfloat camRightx, camRighty, camRightz;
-GLfloat camUpx, camUpy, camUpz;
+struct point {
+    GLfloat x, y, z;
+};
+struct point pos;  // position of the eye
+struct point l;    // look/forward direction
+struct point r;    // right direction
+struct point u;    // up direction
 bool isAxes = true;
 
 /*  Handler for window-repaint event. Call back when the window first appears and
@@ -30,9 +32,9 @@ void display() {
     // gluLookAt(0,0,0, 0,0,-100, 0,1,0);
 
     // control viewing (or camera)
-    gluLookAt(eyex, eyey, eyez,
-              centerx, centery, centerz,
-              upx, upy, upz);
+    gluLookAt(pos.x, pos.y, pos.z,
+              pos.x + l.x, pos.y + l.y, pos.z + l.z,
+              u.x, u.y, u.z);
     // draw
     if (isAxes)
         drawAxes();
@@ -54,125 +56,123 @@ void reshapeListener(GLsizei width, GLsizei height) {  // GLsizei for non-negati
 }
 
 /* Callback handler for normal-key event */
-void keyboardListener(unsigned char key, int x, int y) {
-    float v = 0.05;
+void keyboardListener(unsigned char key, int xx, int yy) {
+    double rate = 0.01;
     switch (key) {
-        // Control shrinkFactor for triangle
-        case ',':
-            if (shrinkFactor > 0.0) shrinkFactor -= v;
-            break;
-        case '.':
-            if (shrinkFactor < 1.0) shrinkFactor += v;
-            break;
-        // Control eye (location of the eye)
-        // control eyex
         case '1':
-            eyex += v;
+            r.x = r.x * cos(rate) + l.x * sin(rate);
+            r.y = r.y * cos(rate) + l.y * sin(rate);
+            r.z = r.z * cos(rate) + l.z * sin(rate);
+
+            l.x = l.x * cos(rate) - r.x * sin(rate);
+            l.y = l.y * cos(rate) - r.y * sin(rate);
+            l.z = l.z * cos(rate) - r.z * sin(rate);
             break;
+
         case '2':
-            eyex -= v;
+            r.x = r.x * cos(-rate) + l.x * sin(-rate);
+            r.y = r.y * cos(-rate) + l.y * sin(-rate);
+            r.z = r.z * cos(-rate) + l.z * sin(-rate);
+
+            l.x = l.x * cos(-rate) - r.x * sin(-rate);
+            l.y = l.y * cos(-rate) - r.y * sin(-rate);
+            l.z = l.z * cos(-rate) - r.z * sin(-rate);
             break;
-        // control eyey
+
         case '3':
-            eyey += v;
+            l.x = l.x * cos(rate) + u.x * sin(rate);
+            l.y = l.y * cos(rate) + u.y * sin(rate);
+            l.z = l.z * cos(rate) + u.z * sin(rate);
+
+            u.x = u.x * cos(rate) - l.x * sin(rate);
+            u.y = u.y * cos(rate) - l.y * sin(rate);
+            u.z = u.z * cos(rate) - l.z * sin(rate);
             break;
+
         case '4':
-            eyey -= v;
+            l.x = l.x * cos(-rate) + u.x * sin(-rate);
+            l.y = l.y * cos(-rate) + u.y * sin(-rate);
+            l.z = l.z * cos(-rate) + u.z * sin(-rate);
+
+            u.x = u.x * cos(-rate) - l.x * sin(-rate);
+            u.y = u.y * cos(-rate) - l.y * sin(-rate);
+            u.z = u.z * cos(-rate) - l.z * sin(-rate);
             break;
-        // control eyez
+
         case '5':
-            eyez += v;
+            u.x = u.x * cos(rate) + r.x * sin(rate);
+            u.y = u.y * cos(rate) + r.y * sin(rate);
+            u.z = u.z * cos(rate) + r.z * sin(rate);
+
+            r.x = r.x * cos(rate) - u.x * sin(rate);
+            r.y = r.y * cos(rate) - u.y * sin(rate);
+            r.z = r.z * cos(rate) - u.z * sin(rate);
             break;
+
         case '6':
-            eyez -= v;
+            u.x = u.x * cos(-rate) + r.x * sin(-rate);
+            u.y = u.y * cos(-rate) + r.y * sin(-rate);
+            u.z = u.z * cos(-rate) + r.z * sin(-rate);
+
+            r.x = r.x * cos(-rate) - u.x * sin(-rate);
+            r.y = r.y * cos(-rate) - u.y * sin(-rate);
+            r.z = r.z * cos(-rate) - u.z * sin(-rate);
             break;
 
-        // Control center (location where the eye is looking at)
-        // control centerx
-        case 'q':
-            centerx += v;
-            break;
-        case 'w':
-            centerx -= v;
-            break;
-        // control centery
-        case 'e':
-            centery += v;
-            break;
-        case 'r':
-            centery -= v;
-            break;
-        // control centerz
-        case 't':
-            centerz += v;
-            break;
-        case 'y':
-            centerz -= v;
-            break;
-
-        // Control what is shown
-        case 'a':
-            isAxes = !isAxes;  // show/hide Axes if 'a' is pressed
-            break;
-
-        // Control exit
-        case 27:      // ESC key
-            exit(0);  // Exit window
+        default:
             break;
     }
-    glutPostRedisplay();  // Post a paint request to activate display()
+    glutPostRedisplay();
 }
 
 /* Callback handler for special-key event */
 void specialKeyListener(int key, int x, int y) {
-    double v = 0.25;
-    double lambda = 0.05;
-    // camera look direction
-    double lx = centerx - eyex;
-    double ly = centery - eyey;
-    double lz = centerz - eyez;
-    double s;
     switch (key) {
-        case GLUT_KEY_LEFT:
-            // eyex += v * (upy * lz);
-            // eyez += v * (-lx * upy);
-            // s = sqrt(eyex * eyex + eyez * eyez) / (4 * sqrt(2));
-            // eyex /= s;
-            // eyez /= s;
-            crossProduct(lx, ly, lz, upx, upy, upz, camRight);
-            eyex -= v * camRight[0];
-            eyey -= v * camRight[1];
-            eyez -= v * camRight[2];
-            centerx -= v * camRight[0];
-            centery -= v * camRight[1];
-            centerz -= v * camRight[2];
-            break;
-        case GLUT_KEY_RIGHT:
-            crossProduct(lx, ly, lz, upx, upy, upz, camRight);
-            eyex += v * camRight[0];
-            eyey += v * camRight[1];
-            eyez += v * camRight[2];
-            centerx += v * camRight[0];
-            centery += v * camRight[1];
-            centerz += v * camRight[2];
-            break;
         case GLUT_KEY_UP:
-            // eyey += v;
-            // move camera forward
-            eyex += centerx + lambda * lx;
-            eyey += centery + lambda * ly;
-            eyez += centerz + lambda * lz;
+            pos.x += l.x;
+            pos.y += l.y;
+            pos.z += l.z;
             break;
         case GLUT_KEY_DOWN:
-            eyex -= centerx + lambda * lx;
-            eyey -= centery + lambda * ly;
-            eyez -= centerz + lambda * lz;
+            pos.x -= l.x;
+            pos.y -= l.y;
+            pos.z -= l.z;
+            break;
+
+        case GLUT_KEY_RIGHT:
+            pos.x += r.x;
+            pos.y += r.y;
+            pos.z += r.z;
+            break;
+        case GLUT_KEY_LEFT:
+            pos.x -= r.x;
+            pos.y -= r.y;
+            pos.z -= r.z;
+            break;
+
+        case GLUT_KEY_PAGE_UP:
+            pos.x += u.x;
+            pos.y += u.y;
+            pos.z += u.z;
+            break;
+        case GLUT_KEY_PAGE_DOWN:
+            pos.x -= u.x;
+            pos.y -= u.y;
+            pos.z -= u.z;
+            break;
+
+        case GLUT_KEY_INSERT:
+            break;
+
+        case GLUT_KEY_HOME:
+            break;
+        case GLUT_KEY_END:
             break;
 
         default:
-            return;
+            break;
     }
-    glutPostRedisplay();  // Post a paint request to activate display()
+    glutPostRedisplay();
 }
 void initGlobalVars() {
     // Triangle
@@ -188,7 +188,22 @@ void initGlobalVars() {
     cr = radius;
     ch = sqrt(2);
     // camera vectors
-    camRight = new float[3];
+    pos.x = 0;
+    pos.y = 0;
+    pos.z = 4;
+    l.x = 0;
+    l.y = 0;
+    l.z = -1;
+    u.x = 0;
+    u.y = 1;
+    u.z = 0;
+    r.x = l.y * u.z - l.z * u.y;
+    r.y = l.z * u.x - l.x * u.z;
+    r.z = l.x * u.y - l.y * u.x;
+    float scale = sqrt(r.x * r.x + r.y * r.y + r.z * r.z);
+    r.x /= scale;
+    r.y /= scale;
+    r.z /= scale;
 }
 /* Main function: GLUT runs as a console application starting at main()  */
 int main(int argc, char** argv) {
