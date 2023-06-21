@@ -14,6 +14,8 @@ void initGL() {
 GLfloat eyex = 4, eyey = 4, eyez = 4;
 GLfloat centerx = 0, centery = 0, centerz = 0;
 GLfloat upx = 0, upy = 1, upz = 0;
+GLfloat camRightx, camRighty, camRightz;
+GLfloat camUpx, camUpy, camUpz;
 bool isAxes = true;
 
 /*  Handler for window-repaint event. Call back when the window first appears and
@@ -37,7 +39,7 @@ void display() {
     drawOctahedron();
     drawSphere();
     drawCylinder();
-    
+
     glutSwapBuffers();  // Render now
 }
 
@@ -124,29 +126,47 @@ void keyboardListener(unsigned char key, int x, int y) {
 /* Callback handler for special-key event */
 void specialKeyListener(int key, int x, int y) {
     double v = 0.25;
+    double lambda = 0.05;
+    // camera look direction
     double lx = centerx - eyex;
+    double ly = centery - eyey;
     double lz = centerz - eyez;
     double s;
     switch (key) {
         case GLUT_KEY_LEFT:
-            eyex += v * (upy * lz);
-            eyez += v * (-lx * upy);
-            s = sqrt(eyex * eyex + eyez * eyez) / (4 * sqrt(2));
-            eyex /= s;
-            eyez /= s;
+            // eyex += v * (upy * lz);
+            // eyez += v * (-lx * upy);
+            // s = sqrt(eyex * eyex + eyez * eyez) / (4 * sqrt(2));
+            // eyex /= s;
+            // eyez /= s;
+            crossProduct(lx, ly, lz, upx, upy, upz, camRight);
+            eyex -= v * camRight[0];
+            eyey -= v * camRight[1];
+            eyez -= v * camRight[2];
+            centerx -= v * camRight[0];
+            centery -= v * camRight[1];
+            centerz -= v * camRight[2];
             break;
         case GLUT_KEY_RIGHT:
-            eyex += v * (-upy * lz);
-            eyez += v * (lx * upy);
-            s = sqrt(eyex * eyex + eyez * eyez) / (4 * sqrt(2));
-            eyex /= s;
-            eyez /= s;
+            crossProduct(lx, ly, lz, upx, upy, upz, camRight);
+            eyex += v * camRight[0];
+            eyey += v * camRight[1];
+            eyez += v * camRight[2];
+            centerx += v * camRight[0];
+            centery += v * camRight[1];
+            centerz += v * camRight[2];
             break;
         case GLUT_KEY_UP:
-            eyey += v;
+            // eyey += v;
+            // move camera forward
+            eyex += centerx + lambda * lx;
+            eyey += centery + lambda * ly;
+            eyez += centerz + lambda * lz;
             break;
         case GLUT_KEY_DOWN:
-            eyey -= v;
+            eyex -= centerx + lambda * lx;
+            eyey -= centery + lambda * ly;
+            eyez -= centerz + lambda * lz;
             break;
 
         default:
@@ -167,6 +187,8 @@ void initGlobalVars() {
     // cylinder
     cr = radius;
     ch = sqrt(2);
+    // camera vectors
+    camRight = new float[3];
 }
 /* Main function: GLUT runs as a console application starting at main()  */
 int main(int argc, char** argv) {

@@ -15,7 +15,13 @@ void drawCurvedSurface();
 void transformCylinder();
 void fillUpperCyl();
 void fillPosXCyl();
+void crossProduct(float dirx, float diry, float dirz, float upx, float upy, float upz, float* right);
 vector<float> buildUnitPositiveX();
+// MATH consts
+float PI = acos(-1);
+// camera vectors
+float* camRight;
+
 // Global variables for triangle
 float centroidX;
 float centroidY;
@@ -191,11 +197,11 @@ void drawCylinder() {
 
     fillPosXCyl();
     glPushMatrix();
-    glScaled(-1, 1, 1); // mirror along YZ plane
+    glScaled(-1, 1, 1);  // mirror along YZ plane
     fillPosXCyl();
     glPopMatrix();
 }
-void fillUpperCyl(){
+void fillUpperCyl() {
     transformCylinder();
     glRotated(90, 0, 1, 0);
     transformCylinder();
@@ -205,13 +211,13 @@ void fillUpperCyl(){
     transformCylinder();
     glRotated(90, 0, 1, 0);
 }
-void fillPosXCyl(){
+void fillPosXCyl() {
     glPushMatrix();
-    glRotated(90, 1, 0 ,0 );
+    glRotated(90, 1, 0, 0);
     transformCylinder();
     glPopMatrix();
     glPushMatrix();
-    glRotated(-90, 1, 0 ,0 );
+    glRotated(-90, 1, 0, 0);
     transformCylinder();
     glPopMatrix();
 }
@@ -226,12 +232,12 @@ void transformCylinder() {
 }
 void drawCurvedSurface() {
     float dTheta = 5.0;
-    float PI = acos(-1);
+    glColor3f(1, 1, 0);
     for (int theta = -35; theta < 35.2; theta += dTheta) {
-        if (theta % 10 == 0)
-            glColor3f(1, 1, 1);
-        else
-            glColor3f(1, 0.59, 0.67);
+        // if (theta % 10 == 0)
+        //     glColor3f(1, 1, 1);
+        // else
+        //     glColor3f(1, 0.59, 0.67);
         float start = theta * PI / 180.0;
         float end = (theta + dTheta) * PI / 180.0;
         glBegin(GL_QUADS);
@@ -316,4 +322,15 @@ vector<float> buildUnitPositiveX() {
     }
 
     return vertices;
+}
+
+void crossProduct(float dirx, float diry, float dirz, float upx, float upy, float upz, float* right) {
+    float* result = right;
+    result[0] = diry * upz - dirz * upy;
+    result[1] = dirz * upx - dirx * upz;
+    result[2] = dirx * upy - diry * upx;
+    float scale = 1 / sqrt(result[0] * result[0] + result[1] * result[1] + result[2] * result[2]);
+    result[0] *= scale;
+    result[1] *= scale;
+    result[2] *= scale;
 }
