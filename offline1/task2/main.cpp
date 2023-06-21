@@ -38,6 +38,7 @@ void display() {
     // draw
     if (isAxes)
         drawAxes();
+    glRotatef(angle, 0.0f, 1.0f, 0.0f);
     drawOctahedron();
     drawSphere();
     drawCylinder();
@@ -57,7 +58,7 @@ void reshapeListener(GLsizei width, GLsizei height) {  // GLsizei for non-negati
 
 /* Callback handler for normal-key event */
 void keyboardListener(unsigned char key, int xx, int yy) {
-    double rate = 0.01;
+    double rate = 0.02;
     double v = 0.05;
     switch (key) {
             // Control shrinkFactor for triangle
@@ -66,6 +67,16 @@ void keyboardListener(unsigned char key, int xx, int yy) {
             break;
         case '.':
             if (shrinkFactor < 1.0) shrinkFactor += v;
+            break;
+        case 'a':
+            // rotate the object in clockwise direction
+            angle -= 5;
+            if (angle <= -360) angle = 0;
+            break;
+        case 'd':
+            // rotate the object in anti-clockwise direction
+            angle += 5;
+            if (angle >= 360) angle = 0;
             break;
         case '1':
             r.x = r.x * cos(rate) + l.x * sin(rate);
@@ -126,6 +137,15 @@ void keyboardListener(unsigned char key, int xx, int yy) {
             r.y = r.y * cos(-rate) - u.y * sin(-rate);
             r.z = r.z * cos(-rate) - u.z * sin(-rate);
             break;
+        case 'p':
+            // print all vectors
+            cout << "--------------------------------------" << endl;
+            cout << "pos: " << pos.x << " " << pos.y << " " << pos.z << endl;
+            cout << "l: " << l.x << " " << l.y << " " << l.z << endl;
+            cout << "r: " << r.x << " " << r.y << " " << r.z << endl;
+            cout << "u: " << u.x << " " << u.y << " " << u.z << endl;
+            cout << "angle: " << angle << endl;
+            break;
 
         default:
             break;
@@ -135,38 +155,39 @@ void keyboardListener(unsigned char key, int xx, int yy) {
 
 /* Callback handler for special-key event */
 void specialKeyListener(int key, int x, int y) {
+    float rate = 0.1;
     switch (key) {
         case GLUT_KEY_UP:
-            pos.x += l.x;
-            pos.y += l.y;
-            pos.z += l.z;
+            pos.x += l.x * rate;
+            pos.y += l.y * rate;
+            pos.z += l.z * rate;
             break;
         case GLUT_KEY_DOWN:
-            pos.x -= l.x;
-            pos.y -= l.y;
-            pos.z -= l.z;
+            pos.x -= l.x * rate;
+            pos.y -= l.y * rate;
+            pos.z -= l.z * rate;
             break;
 
         case GLUT_KEY_RIGHT:
-            pos.x += r.x;
-            pos.y += r.y;
-            pos.z += r.z;
+            pos.x += r.x * rate;
+            pos.y += r.y * rate;
+            pos.z += r.z * rate;
             break;
         case GLUT_KEY_LEFT:
-            pos.x -= r.x;
-            pos.y -= r.y;
-            pos.z -= r.z;
+            pos.x -= r.x * rate;
+            pos.y -= r.y * rate;
+            pos.z -= r.z * rate;
             break;
 
         case GLUT_KEY_PAGE_UP:
-            pos.x += u.x;
-            pos.y += u.y;
-            pos.z += u.z;
+            pos.x += u.x * rate;
+            pos.y += u.y * rate;
+            pos.z += u.z * rate;
             break;
         case GLUT_KEY_PAGE_DOWN:
-            pos.x -= u.x;
-            pos.y -= u.y;
-            pos.z -= u.z;
+            pos.x -= u.x * rate;
+            pos.y -= u.y * rate;
+            pos.z -= u.z * rate;
             break;
 
         case GLUT_KEY_INSERT:
@@ -196,12 +217,12 @@ void initGlobalVars() {
     cr = radius;
     ch = sqrt(2);
     // camera vectors
-    pos.x = 0;
-    pos.y = 0;
+    pos.x = 4;
+    pos.y = 4;
     pos.z = 4;
-    l.x = 0;
-    l.y = 0;
-    l.z = -1;
+    l.x = -1 / sqrt(3);
+    l.y = -1 / sqrt(3);
+    l.z = -1 / sqrt(3);
     u.x = 0;
     u.y = 1;
     u.z = 0;
@@ -212,6 +233,13 @@ void initGlobalVars() {
     r.x /= scale;
     r.y /= scale;
     r.z /= scale;
+    u.x = r.y * l.z - r.z * l.y;
+    u.y = r.z * l.x - r.x * l.z;
+    u.z = r.x * l.y - r.y * l.x;
+    scale = sqrt(u.x * u.x + u.y * u.y + u.z * u.z);
+    u.x /= scale;
+    u.y /= scale;
+    u.z /= scale;
 }
 /* Main function: GLUT runs as a console application starting at main()  */
 int main(int argc, char** argv) {

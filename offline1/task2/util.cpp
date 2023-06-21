@@ -19,6 +19,9 @@ vector<float> buildUnitPositiveX();
 // MATH consts
 float PI = acos(-1);
 
+//Global variables for object rotation
+float angle = 0.0f;
+
 // Global variables for triangle
 float centroidX;
 float centroidY;
