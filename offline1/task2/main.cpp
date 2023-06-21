@@ -58,7 +58,15 @@ void reshapeListener(GLsizei width, GLsizei height) {  // GLsizei for non-negati
 /* Callback handler for normal-key event */
 void keyboardListener(unsigned char key, int xx, int yy) {
     double rate = 0.01;
+    double v = 0.05;
     switch (key) {
+            // Control shrinkFactor for triangle
+        case ',':
+            if (shrinkFactor > 0.0) shrinkFactor -= v;
+            break;
+        case '.':
+            if (shrinkFactor < 1.0) shrinkFactor += v;
+            break;
         case '1':
             r.x = r.x * cos(rate) + l.x * sin(rate);
             r.y = r.y * cos(rate) + l.y * sin(rate);
