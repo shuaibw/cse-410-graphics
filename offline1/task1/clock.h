@@ -2,12 +2,12 @@
 #include <GL/glut.h>
 #include <math.h>
 
-
 void line(double x1, double y1, double x2, double y2);
 void circle(double x, double y, double r, int slices);
 void filled_circle(double x, double y, double r, int slices);
 void text(GLdouble x, GLdouble y, char* str, void* font);
 void setcolor(double r, double g, double b);
+void filled_triangle(double x1, double y1, double x2, double y2, double x3, double y3);
 
 void line(double x1, double y1, double x2, double y2) {
     glBegin(GL_LINE_STRIP);
@@ -66,4 +66,12 @@ void setcolor(double r, double g, double b) {
         b /= mmx;
     }
     glColor3f(r, g, b);
+}
+
+void filled_triangle(double x1, double y1, double x2, double y2, double x3, double y3) {
+    glBegin(GL_POLYGON);
+    glVertex2f(x1, y1);
+    glVertex2f(x2, y2);
+    glVertex2f(x3, y3);
+    glEnd();
 }
