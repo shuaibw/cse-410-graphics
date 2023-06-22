@@ -1,6 +1,6 @@
 #include <iostream>
 #include <GL/glut.h>
-#include "util.h"
+#include "clock.h"
 #include <math.h>
 #include <string.h>
 #include <ctime>
@@ -14,8 +14,6 @@ unsigned int timer_cnt = 0;
 int r = 120;  // Circle radius
 int x = 400;  // Circle cx
 int y = 500;  // Circle cy
-int moff = 10;
-int hoff = 20;
 
 float ang1 = pi / 4, ang2 = pi / 2;
 float theta_max = pi / 4;
@@ -70,12 +68,15 @@ void set_clock_angles() {
     htheta = (pi * h / 6.0) + (pi * m / 360.0) + (pi * s / 21600.0);
 }
 void update_clock_coords() {
-    sec_x = x + r * sin(d + stheta);
-    sec_y = y + r * cos(d + stheta);
-    min_x = x + (r - 10) * sin(d / 60 + mtheta);
-    min_y = y + (r - 10) * cos(d / 60 + mtheta);
-    hour_x = x + (r - 20) * sin(d / 720 + htheta);
-    hour_y = y + (r - 20) * cos(d / 720 + htheta);
+    int moff = 20;
+    int hoff = 30;
+    int soff = 10;
+    sec_x = x + (r-soff) * sin(d + stheta);
+    sec_y = y + (r-soff) * cos(d + stheta);
+    min_x = x + (r - moff) * sin(d / 60 + mtheta);
+    min_y = y + (r - moff) * cos(d / 60 + mtheta);
+    hour_x = x + (r - hoff) * sin(d / 720 + htheta);
+    hour_y = y + (r - hoff) * cos(d / 720 + htheta);
 }
 void hand_anim() {
     s++;
