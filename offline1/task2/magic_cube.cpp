@@ -1,9 +1,11 @@
 // #include <windows.h>  // for MS Windows
 #include <GL/glut.h>  // GLUT, include glu.h and gl.h
 #include <cmath>
-#include "util.cpp"
+#include "magic_cube.h"
 #include <iostream>
 using namespace std;
+void handleFixedUpwardRotation();
+void handleFixedDownwardRotation();
 /* Initialize OpenGL Graphics */
 void initGL() {
     // Set "clearing" or background color
@@ -13,6 +15,29 @@ void initGL() {
 // Global variables
 struct point {
     GLfloat x, y, z;
+    // overload - operator
+    point operator-(const point& p) const {
+        point temp;
+        temp.x = x - p.x;
+        temp.y = y - p.y;
+        temp.z = z - p.z;
+        return temp;
+    }
+    // overload + operator
+    point operator+(const point& p) const {
+        point temp;
+        temp.x = x + p.x;
+        temp.y = y + p.y;
+        temp.z = z + p.z;
+        return temp;
+    }
+    // overload = operator
+    point operator=(const point& p) {
+        x = p.x;
+        y = p.y;
+        z = p.z;
+        return *this;
+    }
 };
 struct point pos;  // position of the eye
 struct point l;    // look/forward direction
@@ -55,7 +80,54 @@ void reshapeListener(GLsizei width, GLsizei height) {  // GLsizei for non-negati
     glLoadIdentity();             // Reset the projection matrix
     gluPerspective(45.0f, aspect, 0.1f, 100.0f);
 }
+point rotateAroundZ(point p, double angle) {
+    point temp;
+    temp.x = p.x * cos(angle) + p.y * sin(angle);
+    temp.y = p.y * cos(angle) - p.x * sin(angle);
+    temp.z = p.z;
+    return temp;
+}
+point rotateAroundX(point p, double angle) {
+    point temp;
+    temp.x = p.x;
+    temp.y = p.y * cos(angle) + p.z * sin(angle);
+    temp.z = p.z * cos(angle) - p.y * sin(angle);
+    return temp;
+}
+void handleFixedUpwardRotation() {
+    // rotate the camera with respect to the point (l.x, l.y, l.z)
+    double rate = 0.02;
+    point temp;
+    temp = pos;
+    pos = pos - temp;
+    l = l - temp;
+    r = r - temp;
+    u = u - temp;
+    float theta = acos(u.y / sqrt(u.x * u.x + u.y * u.y + u.z * u.z));
+    // rotate u about z axis by theta
+    u = rotateAroundZ(u, theta);
+    l = rotateAroundZ(l, theta);
 
+    float theta2 = asin(u.z / sqrt(u.x * u.x + u.y * u.y + u.z * u.z));
+    // rotate around x axis by theta2
+    u = rotateAroundX(u, theta2);
+    l = rotateAroundX(l, theta2);
+
+    // rotate u about Z axis by rate
+    u = rotateAroundZ(u, rate);
+    l = rotateAroundZ(l, rate);
+    // undo theta rotation
+    u = rotateAroundX(u, -theta2);
+    l = rotateAroundX(l, -theta2);
+    u = rotateAroundZ(u, -theta);
+    l = rotateAroundZ(l, -theta);
+    pos = pos + temp;
+    l = l + temp;
+    r = r + temp;
+    u = u + temp;
+}
+void handleFixedDownwardRotation() {
+}
 /* Callback handler for normal-key event */
 void keyboardListener(unsigned char key, int xx, int yy) {
     double rate = 0.02;
@@ -77,6 +149,12 @@ void keyboardListener(unsigned char key, int xx, int yy) {
             // rotate the object in anti-clockwise direction
             angle += 5;
             if (angle >= 360) angle = 0;
+            break;
+        case 'w':
+            handleFixedUpwardRotation();
+            break;
+        case 's':
+            handleFixedDownwardRotation();
             break;
         case '1':
             r.x = r.x * cos(rate) + l.x * sin(rate);
@@ -145,6 +223,7 @@ void keyboardListener(unsigned char key, int xx, int yy) {
             cout << "r: " << r.x << " " << r.y << " " << r.z << endl;
             cout << "u: " << u.x << " " << u.y << " " << u.z << endl;
             cout << "angle: " << angle << endl;
+            cout << "lambda: " << sqrt(u.x * u.x + u.y * u.y + u.z * u.z) << endl;
             break;
 
         default:
