@@ -80,53 +80,38 @@ void reshapeListener(GLsizei width, GLsizei height) {  // GLsizei for non-negati
     glLoadIdentity();             // Reset the projection matrix
     gluPerspective(45.0f, aspect, 0.1f, 100.0f);
 }
-point rotateAroundZ(point p, double angle) {
-    point temp;
-    temp.x = p.x * cos(angle) + p.y * sin(angle);
-    temp.y = p.y * cos(angle) - p.x * sin(angle);
-    temp.z = p.z;
-    return temp;
+
+float angleBetween(point p, float dy) {
+    point tp = p - l;
+    point tq = tp;
+    tq.y += dy;
+    float dot = tp.x * tq.x + tp.y * tq.y;
+    float mag = sqrt(tp.x * tp.x + tp.y * tp.y) *
+                sqrt(tq.x * tq.x + tq.y * tq.y);
+    float angle = acos(dot / mag);
+    return angle;
 }
-point rotateAroundX(point p, double angle) {
-    point temp;
-    temp.x = p.x;
-    temp.y = p.y * cos(angle) + p.z * sin(angle);
-    temp.z = p.z * cos(angle) - p.y * sin(angle);
-    return temp;
+void rotateCameraLU(float angle) {
+    l.x = l.x * cos(angle) + u.x * sin(angle);
+    l.y = l.y * cos(angle) + u.y * sin(angle);
+    l.z = l.z * cos(angle) + u.z * sin(angle);
+    u.x = u.x * cos(angle) - l.x * sin(angle);
+    u.y = u.y * cos(angle) - l.y * sin(angle);
+    u.z = u.z * cos(angle) - l.z * sin(angle);
 }
 void handleFixedUpwardRotation() {
-    // rotate the camera with respect to the point (l.x, l.y, l.z)
-    double rate = 0.02;
-    point temp;
-    temp = pos;
-    pos = pos - temp;
-    l = l - temp;
-    r = r - temp;
-    u = u - temp;
-    float theta = acos(u.y / sqrt(u.x * u.x + u.y * u.y + u.z * u.z));
-    // rotate u about z axis by theta
-    u = rotateAroundZ(u, theta);
-    l = rotateAroundZ(l, theta);
-
-    float theta2 = asin(u.z / sqrt(u.x * u.x + u.y * u.y + u.z * u.z));
-    // rotate around x axis by theta2
-    u = rotateAroundX(u, theta2);
-    l = rotateAroundX(l, theta2);
-
-    // rotate u about Z axis by rate
-    u = rotateAroundZ(u, rate);
-    l = rotateAroundZ(l, rate);
-    // undo theta rotation
-    u = rotateAroundX(u, -theta2);
-    l = rotateAroundX(l, -theta2);
-    u = rotateAroundZ(u, -theta);
-    l = rotateAroundZ(l, -theta);
-    pos = pos + temp;
-    l = l + temp;
-    r = r + temp;
-    u = u + temp;
+    float dy = 0.1;
+    pos.y += dy;
+    float angle = angleBetween(pos, dy);
+    // look down by angle
+    rotateCameraLU(-angle);
 }
 void handleFixedDownwardRotation() {
+    float dy = 0.1;
+    pos.y -= dy;
+    float angle = angleBetween(pos, dy);
+    // look up by angle
+    rotateCameraLU(angle);
 }
 /* Callback handler for normal-key event */
 void keyboardListener(unsigned char key, int xx, int yy) {

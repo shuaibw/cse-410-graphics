@@ -142,9 +142,9 @@ void timer(int value) {
     if (timer_cnt % 100 == 0) {
         // std::cout << "Timer: " << timer_cnt << " counts" << std::endl;
         // show h,m,s,stheata,mtheta,htheta,d
-        std::cout << "h: " << h << " m: " << m << " s: " << s << std::endl;
-        std::cout << "stheta: " << stheta << " mtheta: " << mtheta << " htheta: " << htheta << std::endl;
-        std::cout << "d: " << d << std::endl;
+        // std::cout << "h: " << h << " m: " << m << " s: " << s << std::endl;
+        // std::cout << "stheta: " << stheta << " mtheta: " << mtheta << " htheta: " << htheta << std::endl;
+        // std::cout << "d: " << d << std::endl;
         timer_cnt = 0;
         hand_anim();
     }
