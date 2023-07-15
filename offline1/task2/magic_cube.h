@@ -9,17 +9,20 @@ void drawCylinder();
 void drawTriangle();
 void drawSphere();
 void drawPositiveX();
+void drawPositiveXHalf();
 void drawHalfOctahedron();
 void drawOctahedron();
 void drawCurvedSurface();
+void drawCurvedSurfaceHalf();
 void transformCylinder();
+void transformCylinderHalf();
 void fillUpperCyl();
 void fillPosXCyl();
 vector<float> buildUnitPositiveX();
 // MATH consts
 float PI = acos(-1);
 
-//Global variables for object rotation
+// Global variables for object rotation
 float angle = 0.0f;
 
 // Global variables for triangle
@@ -81,18 +84,18 @@ void drawHalfOctahedron() {
 }
 void drawOctahedron() {
     drawHalfOctahedron();
-    glPushMatrix();
-    glRotated(90, 0, 1, 0);
-    glScalef(1, -1, 1);  // mirror along XZ plane
-    drawHalfOctahedron();
-    glPopMatrix();
+    // glPushMatrix();
+    // glRotated(90, 0, 1, 0);
+    // glScalef(1, -1, 1);  // mirror along XZ plane
+    // drawHalfOctahedron();
+    // glPopMatrix();
 }
 void drawSphere() {
     glColor3f(0, 1, 0);
     glPushMatrix();
     glTranslated(shrinkFactor, 0, 0);
     glScaled(1 - shrinkFactor, 1 - shrinkFactor, 1 - shrinkFactor);
-    drawPositiveX();  // +X
+    drawPositiveXHalf();  // +X
     glPopMatrix();
 
     glColor3f(0, 0, 1);
@@ -100,7 +103,7 @@ void drawSphere() {
     glRotated(90, 0, 1, 0);
     glTranslated(shrinkFactor, 0, 0);
     glScaled(1 - shrinkFactor, 1 - shrinkFactor, 1 - shrinkFactor);
-    drawPositiveX();  // -Z
+    drawPositiveXHalf();  // -Z
     glPopMatrix();
 
     glColor3f(0, 1, 0);
@@ -108,7 +111,7 @@ void drawSphere() {
     glRotated(180, 0, 1, 0);
     glTranslated(shrinkFactor, 0, 0);
     glScaled(1 - shrinkFactor, 1 - shrinkFactor, 1 - shrinkFactor);
-    drawPositiveX();  // -X
+    drawPositiveXHalf();  // -X
     glPopMatrix();
 
     glColor3f(0, 0, 1);
@@ -116,7 +119,7 @@ void drawSphere() {
     glRotated(-90, 0, 1, 0);
     glTranslated(shrinkFactor, 0, 0);
     glScaled(1 - shrinkFactor, 1 - shrinkFactor, 1 - shrinkFactor);
-    drawPositiveX();  // +Z
+    drawPositiveXHalf();  // +Z
     glPopMatrix();
 
     glPushMatrix();
@@ -127,12 +130,66 @@ void drawSphere() {
     drawPositiveX();  // +Y
     glPopMatrix();
 
-    glPushMatrix();
-    glRotated(-90, 0, 0, 1);
-    glTranslated(shrinkFactor, 0, 0);
-    glScaled(1 - shrinkFactor, 1 - shrinkFactor, 1 - shrinkFactor);
-    drawPositiveX();  // -Y
-    glPopMatrix();
+    // glPushMatrix();
+    // glRotated(-90, 0, 0, 1);
+    // glTranslated(shrinkFactor, 0, 0);
+    // glScaled(1 - shrinkFactor, 1 - shrinkFactor, 1 - shrinkFactor);
+    // drawPositiveX();  // -Y
+    // glPopMatrix();
+}
+void drawPositiveXHalf() {
+    // draw the filled sphere from vertices
+    vector<float> vertices = verticesXPos;
+    int pointsPerRow = (int)pow(2, subdivision) + 1;
+    int totalPoints = vertices.size() / 3;
+    int numRows = totalPoints / pointsPerRow;
+    glBegin(GL_QUADS);
+    for (int i = 0; i < (totalPoints - 1 - pointsPerRow)/2; i++) {
+        float x1 = vertices[i * 3];
+        float y1 = vertices[i * 3 + 1];
+        float z1 = vertices[i * 3 + 2];
+        float x2 = vertices[(i + 1) * 3];
+        float y2 = vertices[(i + 1) * 3 + 1];
+        float z2 = vertices[(i + 1) * 3 + 2];
+        float x3 = vertices[(i + pointsPerRow) * 3];
+        float y3 = vertices[(i + pointsPerRow) * 3 + 1];
+        float z3 = vertices[(i + pointsPerRow) * 3 + 2];
+        float x4 = vertices[(i + pointsPerRow + 1) * 3];
+        float y4 = vertices[(i + pointsPerRow + 1) * 3 + 1];
+        float z4 = vertices[(i + pointsPerRow + 1) * 3 + 2];
+        glVertex3f(x1, y1, z1);
+        glVertex3f(x2, y2, z2);
+        glVertex3f(x4, y4, z4);
+        glVertex3f(x3, y3, z3);
+    }
+    glEnd();
+    // glPointSize(3);
+    // float r = 1;
+    // float g = 0;
+    // float b = 0;
+    // glBegin(GL_POINTS);
+    // for (int i = 0; i < vertices.size(); i += 3) {
+    //     // change color every 2 vertices
+    //     if (i % 6 == 0) {
+    //         if (r == 1) {
+    //             r = 0;
+    //             g = 1;
+    //             b = 0;
+    //         } else if (g == 1) {
+    //             r = 0;
+    //             g = 0;
+    //             b = 1;
+    //         } else {
+    //             r = 1;
+    //             g = 0;
+    //             b = 0;
+    //         }
+    //         glColor3f(r, g, b);
+    //     }
+    //     if (i == 0) glColor3f(1, 1, 0);
+    //     glVertex3f(vertices[i], vertices[i + 1], vertices[i + 2]);
+    // }
+    // glEnd();
 }
 void drawPositiveX() {
     // draw the filled sphere from vertices
@@ -190,10 +247,10 @@ void drawPositiveX() {
 }
 void drawCylinder() {
     fillUpperCyl();
-    glPushMatrix();
-    glScaled(1, -1, 1);  // mirror along XZ plane
-    fillUpperCyl();
-    glPopMatrix();
+    // glPushMatrix();
+    // glScaled(1, -1, 1);  // mirror along XZ plane
+    // fillUpperCyl();
+    // glPopMatrix();
 
     fillPosXCyl();
     glPushMatrix();
@@ -214,11 +271,12 @@ void fillUpperCyl() {
 void fillPosXCyl() {
     glPushMatrix();
     glRotated(90, 1, 0, 0);
-    transformCylinder();
+    transformCylinderHalf();
     glPopMatrix();
     glPushMatrix();
+    glScaled(1, -1, 1);
     glRotated(-90, 1, 0, 0);
-    transformCylinder();
+    transformCylinderHalf();
     glPopMatrix();
 }
 void transformCylinder() {
@@ -229,6 +287,43 @@ void transformCylinder() {
     glTranslated(shrinkFactor / sqrt(2), 0, 0);
     drawCurvedSurface();
     glPopMatrix();
+}
+void transformCylinderHalf() {
+    cr = sqrt(1.0 / 3.0) * (1 - shrinkFactor);
+    ch = sqrt(2) * shrinkFactor;
+    glPushMatrix();
+    glRotated(45, 0, 0, 1);
+    glTranslated(shrinkFactor / sqrt(2), 0, 0);
+    drawCurvedSurfaceHalf();
+    glPopMatrix();
+}
+void drawCurvedSurfaceHalf() {
+    float dTheta = 5.0;
+    glColor3f(1, 1, 0);
+    for (int theta = -35; theta < -0.5; theta += dTheta) {
+        // if (theta % 10 == 0)
+        //     glColor3f(1, 1, 1);
+        // else
+        //     glColor3f(1, 0.59, 0.67);
+        float start = theta * PI / 180.0;
+        float end = (theta + dTheta) * PI / 180.0;
+        glBegin(GL_QUADS);
+        glVertex3f(cr * cos(start), ch / 2, cr * sin(start));
+        glVertex3f(cr * cos(end), ch / 2, cr * sin(end));
+        glVertex3f(cr * cos(end), -ch / 2, cr * sin(end));
+        glVertex3f(cr * cos(start), -ch / 2, cr * sin(start));
+        glEnd();
+    }
+    float theta = -35;
+    dTheta = -0.2644;
+    float start = theta * PI / 180.0;
+    float end = (theta + dTheta) * PI / 180.0;
+    glBegin(GL_QUADS);
+    glVertex3f(cr * cos(start), ch / 2, cr * sin(start));
+    glVertex3f(cr * cos(end), ch / 2, cr * sin(end));
+    glVertex3f(cr * cos(end), -ch / 2, cr * sin(end));
+    glVertex3f(cr * cos(start), -ch / 2, cr * sin(start));
+    glEnd();
 }
 void drawCurvedSurface() {
     float dTheta = 5.0;
