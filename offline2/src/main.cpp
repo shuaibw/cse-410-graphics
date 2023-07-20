@@ -41,7 +41,7 @@ int main(int argc, char** argv) {
         cout << "Usage: main.exe <test_case>" << endl;
         return 1;
     }
-    // Instructions for autograder:
+    // Instructions for autograder: g++ -std=c++17 main.cpp -o main.exe
     // Input file should be in ../tests/<test_case>/scene.txt
     // Provide <test_case> as command line argument, i.e. main.exe 1
     // Output files will be in the same directory as main.exe
