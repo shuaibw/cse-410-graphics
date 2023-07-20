@@ -11,7 +11,7 @@ void transformPoints(const mat4& M, string input, string output) {
     ofstream fout = ofstream(output);
     fout << fixed << setprecision(7);
     if (!fin.is_open()) {
-        cout << "Error opening file" << endl;
+        cout << "Error opening file: " << input <<endl;
         return;
     }
     string line{};
@@ -41,13 +41,17 @@ int main(int argc, char** argv) {
         cout << "Usage: main.exe <test_case>" << endl;
         return 1;
     }
+    // Instructions for autograder:
+    // Input file should be in ../tests/<test_case>/scene.txt
+    // Provide <test_case> as command line argument, i.e. main.exe 1
+    // Output files will be in the same directory as main.exe
     string input = "../tests/" + string(argv[1]) + "/scene.txt";
     ifstream fin(input);
     ofstream fout("stage1.txt");
     fout << fixed << setprecision(7);
     cout << fixed << setprecision(2);
     if (!fin.is_open()) {
-        cout << "Error opening file" << endl;
+        cout << "Error opening file: " << input << endl;
         return 1;
     }
     stack<mat4> s;
