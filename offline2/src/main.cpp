@@ -6,36 +6,6 @@
 #include "util.cpp"
 using namespace std;
 
-void transformPoints(const mat4& M, string input, string output) {
-    ifstream fin = ifstream(input);
-    ofstream fout = ofstream(output);
-    fout << fixed << setprecision(7);
-    if (!fin.is_open()) {
-        cout << "Error opening file: " << input <<endl;
-        return;
-    }
-    string line{};
-    while (getline(fin, line)) {
-        if (line == "") continue;
-        point p1, p2, p3;
-        stringstream ss(line);
-        ss >> p1.x >> p1.y >> p1.z;
-        getline(fin, line);
-        stringstream ss2(line);
-        ss2 >> p2.x >> p2.y >> p2.z;
-        getline(fin, line);
-        stringstream ss3(line);
-        ss3 >> p3.x >> p3.y >> p3.z;
-        p1 = transformPoint(M, p1);
-        p2 = transformPoint(M, p2);
-        p3 = transformPoint(M, p3);
-        fout << p1.x << " " << p1.y << " " << p1.z << endl;
-        fout << p2.x << " " << p2.y << " " << p2.z << endl;
-        fout << p3.x << " " << p3.y << " " << p3.z << endl
-             << endl;
-    }
-}
-
 int main(int argc, char** argv) {
     if (argc != 2) {
         cout << "Usage: main.exe <test_case>" << endl;
@@ -45,10 +15,14 @@ int main(int argc, char** argv) {
     // Input file should be in ../tests/<test_case>/scene.txt
     // Provide <test_case> as command line argument, i.e. main.exe 1
     // Output files will be in the same directory as main.exe
-    string input = "../tests/" + string(argv[1]) + "/scene.txt";
+    string input = "../tests_1/" + string(argv[1]) + "/scene.txt";
     ifstream fin(input);
-    ofstream fout("stage1.txt");
-    fout << fixed << setprecision(7);
+    ofstream stage1("stage1.txt");
+    ofstream stage2("stage2.txt");
+    ofstream stage3("stage3.txt");
+    stage1 << fixed << setprecision(7);
+    stage2 << fixed << setprecision(7);
+    stage3 << fixed << setprecision(7);
     cout << fixed << setprecision(2);
     if (!fin.is_open()) {
         cout << "Error opening file: " << input << endl;
@@ -67,8 +41,9 @@ int main(int argc, char** argv) {
     fin >> up.x >> up.y >> up.z;
     fin >> fovY >> aspectRatio >> near >> far;
 
-    // stage 1: Modeling transformation
     string line{};
+    mat4 V = getViewTransformationMatrix(eye, look, up);
+    mat4 P = getProjectionMatrix(fovY, aspectRatio, near, far);
     while (!fin.eof()) {
         fin >> line;
         if (line == "triangle") {
@@ -76,12 +51,29 @@ int main(int argc, char** argv) {
             fin >> p1.x >> p1.y >> p1.z;
             fin >> p2.x >> p2.y >> p2.z;
             fin >> p3.x >> p3.y >> p3.z;
+            // stage 1: Modeling transformation
             p1 = transformPoint(s.top(), p1);
             p2 = transformPoint(s.top(), p2);
             p3 = transformPoint(s.top(), p3);
-            fout << p1.x << " " << p1.y << " " << p1.z << endl;
-            fout << p2.x << " " << p2.y << " " << p2.z << endl;
-            fout << p3.x << " " << p3.y << " " << p3.z << endl
+            stage1 << p1.x << " " << p1.y << " " << p1.z << endl;
+            stage1 << p2.x << " " << p2.y << " " << p2.z << endl;
+            stage1 << p3.x << " " << p3.y << " " << p3.z << endl
+                 << endl;
+             // stage 2: View transformation
+            p1 = transformPoint(V, p1);
+            p2 = transformPoint(V, p2);
+            p3 = transformPoint(V, p3);
+            stage2 << p1.x << " " << p1.y << " " << p1.z << endl;
+            stage2 << p2.x << " " << p2.y << " " << p2.z << endl;
+            stage2 << p3.x << " " << p3.y << " " << p3.z << endl
+                 << endl;
+            // stage 3: Projection transformation
+            p1 = transformPoint(P, p1);
+            p2 = transformPoint(P, p2);
+            p3 = transformPoint(P, p3);
+            stage3 << p1.x << " " << p1.y << " " << p1.z << endl;
+            stage3 << p2.x << " " << p2.y << " " << p2.z << endl;
+            stage3 << p3.x << " " << p3.y << " " << p3.z << endl
                  << endl;
 
         } else if (line == "translate") {
@@ -110,13 +102,8 @@ int main(int argc, char** argv) {
         }
     }
     fin.close();
-    fout.close();
-
-    // stage 2: View transformation
-    mat4 V = getViewTransformationMatrix(eye, look, up);
-    transformPoints(V, "stage1.txt", "stage2.txt");
-    // stage 3: Projection transformation
-    mat4 P = getProjectionMatrix(fovY, aspectRatio, near, far);
-    transformPoints(P, "stage2.txt", "stage3.txt");
+    stage1.close();
+    stage2.close();
+    stage3.close();
     return 0;
 }
