@@ -6,15 +6,19 @@
 #include <cmath>
 #include <vector>
 #include <stack>
+#include "bitmap_image.hpp"
 class point;
 class mat4;
+class triangle;
 point transformPoint(const mat4&, const point&);
 mat4 getRotationMatrix(point, double);
 point applyRodrigues(const point&, const point&, const double&);
 mat4 getTranslationMatrix(const point&);
 mat4 getViewTransformationMatrix(const point&, const point&, const point&);
 mat4 getProjectionMatrix(double, double, double, double);
-
+rgb_t generateRandomColor();
+std::pair<double, double> findIntersection(const point&, const point&, double ys);
+std::pair<std::pair<double, double>, std::pair<double, double>> intersectionX(const triangle& t, double ys);
 class point {
    public:
     double x, y, z;
@@ -119,6 +123,41 @@ class mat4 {
     }
 };
 
+class triangle {
+   public:
+    point p1, p2, p3;
+    rgb_t color;
+    triangle(const point& p1, const point& p2, const point& p3)
+        : color{generateRandomColor()} {
+        double y1 = p1.y, y2 = p2.y, y3 = p3.y;
+        if (y1 >= y2 && y1 >= y3) {
+            this->p1 = p1;
+            this->p2 = p2;
+            this->p3 = p3;
+        } else if (y2 >= y1 && y2 >= y3) {
+            this->p1 = p2;
+            this->p2 = p3;
+            this->p3 = p1;
+        } else {
+            this->p1 = p3;
+            this->p2 = p1;
+            this->p3 = p2;
+        }
+    }
+    triangle()
+        : p1{point()}, p2{point()}, p3{point()}, color{generateRandomColor()} {}
+    friend std::ostream& operator<<(std::ostream& os, const triangle& t) {
+        os << t.p1 << std::endl;
+        os << t.p2 << std::endl;
+        os << t.p3 << std::endl;
+        return os;
+    }
+};
+
+rgb_t generateRandomColor() {
+    return make_colour(rand() % 256, rand() % 256, rand() % 256);
+}
+
 point transformPoint(const mat4& mat, const point& p) {
     double x = p.x, y = p.y, z = p.z;
     double w = mat.m[3][0] * x + mat.m[3][1] * y + mat.m[3][2] * z + mat.m[3][3];
@@ -186,4 +225,22 @@ mat4 getProjectionMatrix(double fovY, double aspectRatio, double near, double fa
     P.m[2][3] = -(2 * far * near) / (far - near);
     P.m[3][2] = -1;
     return P;
+}
+// includes depth information
+std::pair<double, double> findIntersection(const point& p1, const point& p2, double y) {
+    double x1 = p1.x, x2 = p2.x, y1 = p1.y, y2 = p2.y, z1 = p1.z, z2 = p2.z;
+    double t = (y - y1) / (y2 - y1);
+    // if (t < 0 || t > 1) {
+    //     throw std::runtime_error("Invalid intersection");
+    // }
+    return std::pair<double, double>(x1 + t * (x2 - x1), z1 + t * (z2 - z1));
+}
+
+std::pair<std::pair<double, double>, std::pair<double, double>> intersectionX(const triangle& t, double ys) {
+    std::pair<double, double> x1 = findIntersection(t.p1, t.p2, ys);
+    std::pair<double, double> x2 = findIntersection(t.p1, t.p3, ys);
+    if (x1.first < x2.first){
+        return std::pair<std::pair<double, double>, std::pair<double, double>>(x1, x2);
+    }
+    return std::pair<std::pair<double, double>, std::pair<double, double>>(x2, x1);
 }

@@ -2,3 +2,4 @@
 **/*.out
 **/.vscode/
 **/scratch/
+offline2/src/*.txt
