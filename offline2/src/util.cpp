@@ -19,6 +19,13 @@ mat4 getProjectionMatrix(double, double, double, double);
 rgb_t generateRandomColor();
 std::pair<double, double> findIntersection(const point&, const point&, double ys);
 std::pair<std::pair<double, double>, std::pair<double, double>> intersectionX(const triangle& t, double ys);
+
+static unsigned long int g_seed = 1;
+inline int random()
+{
+ g_seed = (214013 * g_seed + 2531011);
+ return (g_seed >> 16) & 0x7FFF;
+}
 class point {
    public:
     double x, y, z;
@@ -123,12 +130,20 @@ class mat4 {
     }
 };
 
+inline void roundTo7(point &p) {
+    p.x =  round(p.x * 10000000) / 10000000;
+    p.y =  round(p.y * 10000000) / 10000000;
+    p.z =  round(p.z * 10000000) / 10000000;
+}
 class triangle {
    public:
     point p1, p2, p3;
     rgb_t color;
-    triangle(const point& p1, const point& p2, const point& p3)
+    triangle(point& p1, point& p2, point& p3)
         : color{generateRandomColor()} {
+        // roundTo7(p1);
+        // roundTo7(p2);
+        // roundTo7(p3);
         double y1 = p1.y, y2 = p2.y, y3 = p3.y;
         if (y1 >= y2 && y1 >= y3) {
             this->p1 = p1;
@@ -155,7 +170,7 @@ class triangle {
 };
 
 rgb_t generateRandomColor() {
-    return make_colour(rand() % 256, rand() % 256, rand() % 256);
+    return make_colour(random() % 256, random() % 256, random() % 256);
 }
 
 point transformPoint(const mat4& mat, const point& p) {

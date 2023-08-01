@@ -7,6 +7,29 @@
 #include "util.cpp"
 #include "bitmap_image.hpp"
 using namespace std;
+bool debug = 0;
+void readPoints(vector<triangle>& triangles, string input) {
+    ifstream fin = ifstream(input);
+    if (!fin.is_open()) {
+        cout << "Error opening file: " << input << endl;
+        return;
+    }
+    string line{};
+    while (getline(fin, line)) {
+        if (line == "") continue;
+        point p1, p2, p3;
+        stringstream ss(line);
+        ss >> p1.x >> p1.y >> p1.z;
+        getline(fin, line);
+        stringstream ss2(line);
+        ss2 >> p2.x >> p2.y >> p2.z;
+        getline(fin, line);
+        stringstream ss3(line);
+        ss3 >> p3.x >> p3.y >> p3.z;
+        triangles.push_back(triangle(p1, p2, p3));
+    }
+    fin.close();
+}
 int main(int argc, char** argv) {
     if (argc != 2) {
         cout << "Usage: main.exe <test_case>" << endl;
@@ -16,8 +39,8 @@ int main(int argc, char** argv) {
     // Input file should be in ../tests/<test_case>/scene.txt
     // Provide <test_case> as command line argument, i.e. main.exe 1
     // Output files will be in the same directory as main.exe
-    string input = "../tests_2/" + string(argv[1]) + "/scene.txt";
-    string config = "../tests_2/" + string(argv[1]) + "/config.txt";
+    string input = "../tests_1/" + string(argv[1]) + "/scene.txt";
+    string config = "../tests_1/" + string(argv[1]) + "/config.txt";
     ifstream fin(input);
     ofstream stage1("stage1.txt");
     ofstream stage2("stage2.txt");
@@ -85,8 +108,10 @@ int main(int argc, char** argv) {
             stage3 << p3.x << " " << p3.y << " " << p3.z << endl
                    << endl;
             // Store triangle for stage 4
-            triangle t{p1, p2, p3};
-            triangles.push_back(t);
+            if (!debug) {
+                triangle t{p1, p2, p3};
+                triangles.push_back(t);
+            }
         } else if (line == "translate") {
             point translate;
             fin >> translate.x >> translate.y >> translate.z;
@@ -116,7 +141,9 @@ int main(int argc, char** argv) {
     stage1.close();
     stage2.close();
     stage3.close();
-
+    if (debug) {
+        readPoints(triangles, "debug3.txt");
+    }
     fin = ifstream(config);
     if (!fin.is_open()) {
         cout << "Error opening file: " << config << endl;
@@ -165,8 +192,8 @@ int main(int argc, char** argv) {
             double zRight = xs.second.second;
             int leftCol = (left - leftX) / dx;
             int rightCol = (right - leftX) / dx;
-            if (leftCol < 0) leftCol=0;
-            if (rightCol >= width) rightCol=width-1;
+            if (leftCol < 0) leftCol = 0;
+            if (rightCol >= width) rightCol = width - 1;
             for (int j = leftCol; j <= rightCol; j++) {
                 double x = leftX + j * dx;
                 double z = zLeft + (zRight - zLeft) * (x - left) / (right - left);
