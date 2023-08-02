@@ -213,5 +213,8 @@ int main(int argc, char** argv) {
         zBufferOut << endl;
     }
     zBufferOut.close();
+    image.clear();
+    triangles.clear();
+    zBuffer.clear();
     return 0;
 }
