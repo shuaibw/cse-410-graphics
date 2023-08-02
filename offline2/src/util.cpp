@@ -170,7 +170,8 @@ class triangle {
 };
 
 rgb_t generateRandomColor() {
-    return make_colour(random() % 256, random() % 256, random() % 256);
+    int r = random() % 256, g = random() % 256, b = random() % 256;
+    return make_colour(r,g,b);
 }
 
 point transformPoint(const mat4& mat, const point& p) {
