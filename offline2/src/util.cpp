@@ -17,14 +17,14 @@ mat4 getTranslationMatrix(const point&);
 mat4 getViewTransformationMatrix(const point&, const point&, const point&);
 mat4 getProjectionMatrix(double, double, double, double);
 rgb_t generateRandomColor();
+double calculateParamT(const point&, const point&, double);
 std::pair<double, double> findIntersection(const point&, const point&, double ys);
 std::pair<std::pair<double, double>, std::pair<double, double>> intersectionX(const triangle& t, double ys);
 
 static unsigned long int g_seed = 1;
-inline int random()
-{
- g_seed = (214013 * g_seed + 2531011);
- return (g_seed >> 16) & 0x7FFF;
+inline int random() {
+    g_seed = (214013 * g_seed + 2531011);
+    return (g_seed >> 16) & 0x7FFF;
 }
 class point {
    public:
@@ -130,10 +130,10 @@ class mat4 {
     }
 };
 
-inline void roundTo7(point &p) {
-    p.x =  round(p.x * 10000000) / 10000000;
-    p.y =  round(p.y * 10000000) / 10000000;
-    p.z =  round(p.z * 10000000) / 10000000;
+inline void roundTo7(point& p) {
+    p.x = round(p.x * 10000000) / 10000000;
+    p.y = round(p.y * 10000000) / 10000000;
+    p.z = round(p.z * 10000000) / 10000000;
 }
 class triangle {
    public:
@@ -141,9 +141,9 @@ class triangle {
     rgb_t color;
     triangle(point& p1, point& p2, point& p3)
         : color{generateRandomColor()} {
-        // roundTo7(p1);
-        // roundTo7(p2);
-        // roundTo7(p3);
+        roundTo7(p1);
+        roundTo7(p2);
+        roundTo7(p3);
         double y1 = p1.y, y2 = p2.y, y3 = p3.y;
         if (y1 >= y2 && y1 >= y3) {
             this->p1 = p1;
@@ -241,20 +241,36 @@ mat4 getProjectionMatrix(double fovY, double aspectRatio, double near, double fa
     P.m[3][2] = -1;
     return P;
 }
-// includes depth information
-std::pair<double, double> findIntersection(const point& p1, const point& p2, double y) {
+double calculateParamT(const point& p1, const point& p2, double y) {
     double x1 = p1.x, x2 = p2.x, y1 = p1.y, y2 = p2.y, z1 = p1.z, z2 = p2.z;
     double t = (y - y1) / (y2 - y1);
-    // if (t < 0 || t > 1) {
-    //     throw std::runtime_error("Invalid intersection");
-    // }
+    return t;
+}
+// includes depth information
+std::pair<double, double> findIntersection(const point& p1, const point& p2, double t) {
+    double x1 = p1.x, x2 = p2.x, z1 = p1.z, z2 = p2.z;
+    if (t < 0) t = 0;
     return std::pair<double, double>(x1 + t * (x2 - x1), z1 + t * (z2 - z1));
 }
 
 std::pair<std::pair<double, double>, std::pair<double, double>> intersectionX(const triangle& t, double ys) {
-    std::pair<double, double> x1 = findIntersection(t.p1, t.p2, ys);
-    std::pair<double, double> x2 = findIntersection(t.p1, t.p3, ys);
-    if (x1.first < x2.first){
+    std::pair<double, double> x1;
+    std::pair<double, double> x2;
+    double t1 = calculateParamT(t.p1, t.p2, ys);
+    if (t1 > 1.001) {
+        t1 = calculateParamT(t.p2, t.p3, ys);
+        x1 = findIntersection(t.p2, t.p3, t1);
+    } else {
+        x1 = findIntersection(t.p1, t.p2, t1);
+    }
+    double t2 = calculateParamT(t.p1, t.p3, ys);
+    if (t2 > 1.001) {
+        t2 = calculateParamT(t.p2, t.p3, ys);
+        x2 = findIntersection(t.p2, t.p3, t2);
+    } else {
+        x2 = findIntersection(t.p1, t.p3, t2);
+    }
+    if (x1.first < x2.first) {
         return std::pair<std::pair<double, double>, std::pair<double, double>>(x1, x2);
     }
     return std::pair<std::pair<double, double>, std::pair<double, double>>(x2, x1);

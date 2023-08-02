@@ -39,8 +39,8 @@ int main(int argc, char** argv) {
     // Input file should be in ../tests/<test_case>/scene.txt
     // Provide <test_case> as command line argument, i.e. main.exe 1
     // Output files will be in the same directory as main.exe
-    string input = "../tests_1/" + string(argv[1]) + "/scene.txt";
-    string config = "../tests_1/" + string(argv[1]) + "/config.txt";
+    string input = "../tests_2/" + string(argv[1]) + "/scene.txt";
+    string config = "../tests_2/" + string(argv[1]) + "/config.txt";
     ifstream fin(input);
     ofstream stage1("stage1.txt");
     ofstream stage2("stage2.txt");
@@ -172,9 +172,6 @@ int main(int argc, char** argv) {
     bitmap_image image(width, height);
     image.set_all_channels(0, 0, 0);  // set background to black
     for (const auto& t : triangles) {
-        bool tooNear = t.p1.z < zNear || t.p2.z < zNear || t.p3.z < zNear;
-        bool tooFar = t.p1.z > zFar || t.p2.z > zFar || t.p3.z > zFar;
-        if (tooNear || tooFar) continue;
         // Calulate topmost and bottommost rows of the triangle
         double top = t.p1.y;  // p1 is the topmost point
         double bottom = min(t.p2.y, t.p3.y);
@@ -190,13 +187,14 @@ int main(int argc, char** argv) {
             double zLeft = xs.first.second;
             double right = xs.second.first;
             double zRight = xs.second.second;
-            int leftCol = (left - leftX) / dx;
+            int leftCol = (left - leftX + dx/2) / dx;
             int rightCol = (right - leftX) / dx;
             if (leftCol < 0) leftCol = 0;
             if (rightCol >= width) rightCol = width - 1;
             for (int j = leftCol; j <= rightCol; j++) {
                 double x = leftX + j * dx;
                 double z = zLeft + (zRight - zLeft) * (x - left) / (right - left);
+                if (z < zNear || z > zFar) continue;
                 if (z < zBuffer[i][j]) {
                     zBuffer[i][j] = z;
                     rgb_t color = t.color;
