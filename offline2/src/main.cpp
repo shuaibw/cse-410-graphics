@@ -203,7 +203,7 @@ int main(int argc, char** argv) {
             }
         }
     }
-    image.save_image("output.bmp");
+    image.save_image("out.bmp");
     ofstream zBufferOut("z_buffer.txt");
     zBufferOut << fixed << setprecision(6);
     for (int i = 0; i < width; i++) {
