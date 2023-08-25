@@ -1,7 +1,8 @@
 // #include <windows.h>  // for MS Windows
 #include <GL/glut.h>  // GLUT, include glu.h and gl.h
 #include <cmath>
-#include "magic_cube.h"
+#include "generate_object.h"
+#include "utility.h"
 #include <iostream>
 using namespace std;
 void handleFixedUpwardRotation();
@@ -13,32 +14,7 @@ void initGL() {
     glEnable(GL_DEPTH_TEST);               // Enable depth testing for z-culling
 }
 // Global variables
-struct point {
-    GLfloat x, y, z;
-    // overload - operator
-    point operator-(const point& p) const {
-        point temp;
-        temp.x = x - p.x;
-        temp.y = y - p.y;
-        temp.z = z - p.z;
-        return temp;
-    }
-    // overload + operator
-    point operator+(const point& p) const {
-        point temp;
-        temp.x = x + p.x;
-        temp.y = y + p.y;
-        temp.z = z + p.z;
-        return temp;
-    }
-    // overload = operator
-    point operator=(const point& p) {
-        x = p.x;
-        y = p.y;
-        z = p.z;
-        return *this;
-    }
-};
+
 struct point pos;  // position of the eye
 struct point l;    // look/forward direction
 struct point r;    // right direction
@@ -64,9 +40,12 @@ void display() {
     if (isAxes)
         drawAxes();
     glRotatef(angle, 0.0f, 1.0f, 0.0f);
-    drawOctahedron();
-    drawSphere();
-    drawCylinder();
+    for (const auto& sphere : spheres) {
+        drawSphere(sphere);
+    }
+    // drawCube();
+    // drawSphere();
+    // drawPyramid();
 
     glutSwapBuffers();  // Render now
 }
@@ -74,57 +53,45 @@ void display() {
 void reshapeListener(GLsizei width, GLsizei height) {  // GLsizei for non-negative integer
     if (height == 0)
         height = 1;  // To prevent divide by 0
-    GLfloat aspect = (GLfloat)width / (GLfloat)height;
+    GLdouble aspect = (GLdouble)width / (GLdouble)height;
     glViewport(0, 0, width, height);
     glMatrixMode(GL_PROJECTION);  // To operate on the Projection matrix
     glLoadIdentity();             // Reset the projection matrix
-    gluPerspective(45.0f, aspect, 0.1f, 100.0f);
+    gluPerspective(fovY, aspect, nearPlane, farPlane);
 }
 
-float angleBetween(point p, float dy) {
+double angleBetween(point p, double dy) {
     point tp = p - l;
     point tq = tp;
     tq.y += dy;
-    float dot = tp.x * tq.x + tp.y * tq.y;
-    float mag = sqrt(tp.x * tp.x + tp.y * tp.y) *
+    double dot = tp.x * tq.x + tp.y * tq.y;
+    double mag = sqrt(tp.x * tp.x + tp.y * tp.y) *
                 sqrt(tq.x * tq.x + tq.y * tq.y);
-    float angle = acos(dot / mag);
+    double angle = acos(dot / mag);
     return angle;
 }
-void rotateCameraLU(float angle) {
-    l.x = l.x * cos(angle) + u.x * sin(angle);
-    l.y = l.y * cos(angle) + u.y * sin(angle);
-    l.z = l.z * cos(angle) + u.z * sin(angle);
-    u.x = u.x * cos(angle) - l.x * sin(angle);
-    u.y = u.y * cos(angle) - l.y * sin(angle);
-    u.z = u.z * cos(angle) - l.z * sin(angle);
+void rotateCameraLU(double angle) {
+    l = l * cos(angle) + u * sin(angle);
+    u = u * cos(angle) - l * sin(angle);
 }
 void handleFixedUpwardRotation() {
-    float dy = 0.1;
+    double dy = 0.1;
     pos.y += dy;
-    float angle = angleBetween(pos, dy);
+    double angle = angleBetween(pos, dy);
     // look down by angle
     rotateCameraLU(-angle);
 }
 void handleFixedDownwardRotation() {
-    float dy = 0.1;
+    double dy = 0.1;
     pos.y -= dy;
-    float angle = angleBetween(pos, dy);
+    double angle = angleBetween(pos, dy);
     // look up by angle
     rotateCameraLU(angle);
 }
 /* Callback handler for normal-key event */
 void keyboardListener(unsigned char key, int xx, int yy) {
     double rate = 0.02;
-    double v = 0.05;
     switch (key) {
-            // Control shrinkFactor for triangle
-        case ',':
-            if (shrinkFactor > 0.0) shrinkFactor -= v;
-            break;
-        case '.':
-            if (shrinkFactor < 1.0) shrinkFactor += v;
-            break;
         case 'a':
             // rotate the object in clockwise direction
             angle -= 5;
@@ -142,63 +109,33 @@ void keyboardListener(unsigned char key, int xx, int yy) {
             handleFixedDownwardRotation();
             break;
         case '1':
-            r.x = r.x * cos(rate) + l.x * sin(rate);
-            r.y = r.y * cos(rate) + l.y * sin(rate);
-            r.z = r.z * cos(rate) + l.z * sin(rate);
-
-            l.x = l.x * cos(rate) - r.x * sin(rate);
-            l.y = l.y * cos(rate) - r.y * sin(rate);
-            l.z = l.z * cos(rate) - r.z * sin(rate);
+            r = r * cos(rate) + l * sin(rate);
+            l = l * cos(rate) - r * sin(rate);
             break;
 
         case '2':
-            r.x = r.x * cos(-rate) + l.x * sin(-rate);
-            r.y = r.y * cos(-rate) + l.y * sin(-rate);
-            r.z = r.z * cos(-rate) + l.z * sin(-rate);
-
-            l.x = l.x * cos(-rate) - r.x * sin(-rate);
-            l.y = l.y * cos(-rate) - r.y * sin(-rate);
-            l.z = l.z * cos(-rate) - r.z * sin(-rate);
+            r = r * cos(-rate) + l * sin(-rate);
+            l = l * cos(-rate) - r * sin(-rate);
             break;
 
         case '3':
-            l.x = l.x * cos(rate) + u.x * sin(rate);
-            l.y = l.y * cos(rate) + u.y * sin(rate);
-            l.z = l.z * cos(rate) + u.z * sin(rate);
-
-            u.x = u.x * cos(rate) - l.x * sin(rate);
-            u.y = u.y * cos(rate) - l.y * sin(rate);
-            u.z = u.z * cos(rate) - l.z * sin(rate);
+            l = l * cos(rate) + u * sin(rate);
+            u = u * cos(rate) - l * sin(rate);
             break;
 
         case '4':
-            l.x = l.x * cos(-rate) + u.x * sin(-rate);
-            l.y = l.y * cos(-rate) + u.y * sin(-rate);
-            l.z = l.z * cos(-rate) + u.z * sin(-rate);
-
-            u.x = u.x * cos(-rate) - l.x * sin(-rate);
-            u.y = u.y * cos(-rate) - l.y * sin(-rate);
-            u.z = u.z * cos(-rate) - l.z * sin(-rate);
+            l = l * cos(-rate) + u * sin(-rate);
+            u = u * cos(-rate) - l * sin(-rate);
             break;
 
         case '5':
-            u.x = u.x * cos(rate) + r.x * sin(rate);
-            u.y = u.y * cos(rate) + r.y * sin(rate);
-            u.z = u.z * cos(rate) + r.z * sin(rate);
-
-            r.x = r.x * cos(rate) - u.x * sin(rate);
-            r.y = r.y * cos(rate) - u.y * sin(rate);
-            r.z = r.z * cos(rate) - u.z * sin(rate);
+            u = u * cos(rate) + r * sin(rate);
+            r = r * cos(rate) - u * sin(rate);
             break;
 
         case '6':
-            u.x = u.x * cos(-rate) + r.x * sin(-rate);
-            u.y = u.y * cos(-rate) + r.y * sin(-rate);
-            u.z = u.z * cos(-rate) + r.z * sin(-rate);
-
-            r.x = r.x * cos(-rate) - u.x * sin(-rate);
-            r.y = r.y * cos(-rate) - u.y * sin(-rate);
-            r.z = r.z * cos(-rate) - u.z * sin(-rate);
+            u = u * cos(-rate) + r * sin(-rate);
+            r = r * cos(-rate) - u * sin(-rate);
             break;
         case 'p':
             // print all vectors
@@ -219,39 +156,27 @@ void keyboardListener(unsigned char key, int xx, int yy) {
 
 /* Callback handler for special-key event */
 void specialKeyListener(int key, int x, int y) {
-    float rate = 0.1;
+    double rate = 0.5;
     switch (key) {
         case GLUT_KEY_UP:
-            pos.x += l.x * rate;
-            pos.y += l.y * rate;
-            pos.z += l.z * rate;
+            pos = pos + l * rate;
             break;
         case GLUT_KEY_DOWN:
-            pos.x -= l.x * rate;
-            pos.y -= l.y * rate;
-            pos.z -= l.z * rate;
+            pos = pos - l * rate;
             break;
 
         case GLUT_KEY_RIGHT:
-            pos.x += r.x * rate;
-            pos.y += r.y * rate;
-            pos.z += r.z * rate;
+            pos = pos + r * rate;
             break;
         case GLUT_KEY_LEFT:
-            pos.x -= r.x * rate;
-            pos.y -= r.y * rate;
-            pos.z -= r.z * rate;
+            pos = pos - r * rate;
             break;
 
         case GLUT_KEY_PAGE_UP:
-            pos.x += u.x * rate;
-            pos.y += u.y * rate;
-            pos.z += u.z * rate;
+            pos = pos + u * rate;
             break;
         case GLUT_KEY_PAGE_DOWN:
-            pos.x -= u.x * rate;
-            pos.y -= u.y * rate;
-            pos.z -= u.z * rate;
+            pos = pos - u * rate;
             break;
 
         case GLUT_KEY_INSERT:
@@ -268,48 +193,26 @@ void specialKeyListener(int key, int x, int y) {
     glutPostRedisplay();
 }
 void initGlobalVars() {
-    // Triangle
-    centroidX = (1.0 + 0.0 + 0.0) / 3.0;
-    centroidY = (0.0 + 1.0 + 0.0) / 3.0;
-    centroidZ = (0.0 + 0.0 + 1.0) / 3.0;
-    shrinkFactor = 1.0;
     // Sphere
     subdivision = 4;
-    radius = sqrt(centroidX * centroidX + centroidY * centroidY + centroidZ * centroidZ);
+    radius = 5;
     verticesXPos = buildUnitPositiveX();
-    // cylinder
-    cr = radius;
-    ch = sqrt(2);
     // camera vectors
-    pos.x = 4;
-    pos.y = 4;
-    pos.z = 4;
-    l.x = -1 / sqrt(3);
-    l.y = -1 / sqrt(3);
-    l.z = -1 / sqrt(3);
-    u.x = 0;
-    u.y = 1;
-    u.z = 0;
-    r.x = l.y * u.z - l.z * u.y;
-    r.y = l.z * u.x - l.x * u.z;
-    r.z = l.x * u.y - l.y * u.x;
-    float scale = sqrt(r.x * r.x + r.y * r.y + r.z * r.z);
-    r.x /= scale;
-    r.y /= scale;
-    r.z /= scale;
-    u.x = r.y * l.z - r.z * l.y;
-    u.y = r.z * l.x - r.x * l.z;
-    u.z = r.x * l.y - r.y * l.x;
-    scale = sqrt(u.x * u.x + u.y * u.y + u.z * u.z);
-    u.x /= scale;
-    u.y /= scale;
-    u.z /= scale;
+    pos = {40, 40, 40};
+    l = {-1, -1, -1};
+    u = {0, 1, 0};
+    l.normalize();
+    r = l.cross(u);
+    r.normalize();
+    u = r.cross(l);
+    u.normalize();
 }
 /* Main function: GLUT runs as a console application starting at main()  */
 int main(int argc, char** argv) {
+    readInputFile("description.txt");
     initGlobalVars();
     glutInit(&argc, argv);                                     // Initialize GLUT
-    glutInitWindowSize(640, 640);                              // Set the window's initial width & height
+    glutInitWindowSize(width, height);                              // Set the window's initial width & height
     glutInitWindowPosition(50, 50);                            // Position the window's initial top-left corner
     glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGB);  // Depth, Double buffer, RGB color
     glutCreateWindow("OpenGL 3D Drawing");                     // Create a window with the given title
