@@ -1,7 +1,6 @@
 // #include <windows.h>  // for MS Windows
 #include <GL/glut.h>  // GLUT, include glu.h and gl.h
 #include <cmath>
-#include "generate_object.h"
 #include "utility.h"
 #include <iostream>
 using namespace std;
@@ -39,9 +38,16 @@ void display() {
     // draw
     if (isAxes)
         drawAxes();
+    drawCheckerBoard();
     glRotatef(angle, 0.0f, 1.0f, 0.0f);
     for (const auto& sphere : spheres) {
-        drawSphere(sphere);
+        sphere.draw();
+    }
+    for (const auto& cube : cubes) {
+        cube.draw();
+    }
+    for (const auto& pyramid : pyramids) {
+        pyramid.draw();
     }
     // drawCube();
     // drawSphere();
@@ -66,7 +72,7 @@ double angleBetween(point p, double dy) {
     tq.y += dy;
     double dot = tp.x * tq.x + tp.y * tq.y;
     double mag = sqrt(tp.x * tp.x + tp.y * tp.y) *
-                sqrt(tq.x * tq.x + tq.y * tq.y);
+                 sqrt(tq.x * tq.x + tq.y * tq.y);
     double angle = acos(dot / mag);
     return angle;
 }
@@ -156,7 +162,7 @@ void keyboardListener(unsigned char key, int xx, int yy) {
 
 /* Callback handler for special-key event */
 void specialKeyListener(int key, int x, int y) {
-    double rate = 0.5;
+    double rate = 2;
     switch (key) {
         case GLUT_KEY_UP:
             pos = pos + l * rate;
@@ -193,14 +199,10 @@ void specialKeyListener(int key, int x, int y) {
     glutPostRedisplay();
 }
 void initGlobalVars() {
-    // Sphere
-    subdivision = 4;
-    radius = 5;
-    verticesXPos = buildUnitPositiveX();
     // camera vectors
-    pos = {40, 40, 40};
-    l = {-1, -1, -1};
-    u = {0, 1, 0};
+    pos = {0, -100, 20};
+    l = {0, 1, 0};
+    u = {0, 0, 1};
     l.normalize();
     r = l.cross(u);
     r.normalize();
@@ -212,7 +214,7 @@ int main(int argc, char** argv) {
     readInputFile("description.txt");
     initGlobalVars();
     glutInit(&argc, argv);                                     // Initialize GLUT
-    glutInitWindowSize(width, height);                              // Set the window's initial width & height
+    glutInitWindowSize(width, height);                         // Set the window's initial width & height
     glutInitWindowPosition(50, 50);                            // Position the window's initial top-left corner
     glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGB);  // Depth, Double buffer, RGB color
     glutCreateWindow("OpenGL 3D Drawing");                     // Create a window with the given title
