@@ -14,10 +14,10 @@ void initGL() {
 }
 // Global variables
 
-struct point pos;  // position of the eye
-struct point l;    // look/forward direction
-struct point r;    // right direction
-struct point u;    // up direction
+point pos;  // position of the eye
+point l;    // look/forward direction
+point r;    // right direction
+point u;    // up direction
 bool isAxes = true;
 
 /*  Handler for window-repaint event. Call back when the window first appears and
@@ -28,16 +28,11 @@ void display() {
     glMatrixMode(GL_MODELVIEW);  // To operate on Model-View matrix
     glLoadIdentity();            // Reset the model-view matrix
 
-    // default arguments of gluLookAt
-    // gluLookAt(0,0,0, 0,0,-100, 0,1,0);
-
     // control viewing (or camera)
     gluLookAt(pos.x, pos.y, pos.z,
               pos.x + l.x, pos.y + l.y, pos.z + l.z,
               u.x, u.y, u.z);
-    // draw
-    if (isAxes)
-        drawAxes();
+    if (isAxes) drawAxes();
     drawCheckerBoard();
     glRotatef(angle, 0.0f, 1.0f, 0.0f);
     for (const auto& sphere : spheres) {
@@ -49,9 +44,6 @@ void display() {
     for (const auto& pyramid : pyramids) {
         pyramid.draw();
     }
-    // drawCube();
-    // drawSphere();
-    // drawPyramid();
 
     glutSwapBuffers();  // Render now
 }
@@ -66,37 +58,9 @@ void reshapeListener(GLsizei width, GLsizei height) {  // GLsizei for non-negati
     gluPerspective(fovY, aspect, nearPlane, farPlane);
 }
 
-double angleBetween(point p, double dy) {
-    point tp = p - l;
-    point tq = tp;
-    tq.y += dy;
-    double dot = tp.x * tq.x + tp.y * tq.y;
-    double mag = sqrt(tp.x * tp.x + tp.y * tp.y) *
-                 sqrt(tq.x * tq.x + tq.y * tq.y);
-    double angle = acos(dot / mag);
-    return angle;
-}
-void rotateCameraLU(double angle) {
-    l = l * cos(angle) + u * sin(angle);
-    u = u * cos(angle) - l * sin(angle);
-}
-void handleFixedUpwardRotation() {
-    double dy = 0.1;
-    pos.y += dy;
-    double angle = angleBetween(pos, dy);
-    // look down by angle
-    rotateCameraLU(-angle);
-}
-void handleFixedDownwardRotation() {
-    double dy = 0.1;
-    pos.y -= dy;
-    double angle = angleBetween(pos, dy);
-    // look up by angle
-    rotateCameraLU(angle);
-}
 /* Callback handler for normal-key event */
 void keyboardListener(unsigned char key, int xx, int yy) {
-    double rate = 0.02;
+    double rate = 0.04;
     switch (key) {
         case 'a':
             // rotate the object in clockwise direction
@@ -108,50 +72,55 @@ void keyboardListener(unsigned char key, int xx, int yy) {
             angle += 5;
             if (angle >= 360) angle = 0;
             break;
-        case 'w':
-            handleFixedUpwardRotation();
-            break;
-        case 's':
-            handleFixedDownwardRotation();
-            break;
         case '1':
             r = r * cos(rate) + l * sin(rate);
             l = l * cos(rate) - r * sin(rate);
+            r.normalize();
+            l.normalize();
             break;
 
         case '2':
             r = r * cos(-rate) + l * sin(-rate);
             l = l * cos(-rate) - r * sin(-rate);
+            r.normalize();
+            l.normalize();
             break;
 
         case '3':
             l = l * cos(rate) + u * sin(rate);
             u = u * cos(rate) - l * sin(rate);
+            l.normalize();
+            u.normalize();
             break;
 
         case '4':
             l = l * cos(-rate) + u * sin(-rate);
             u = u * cos(-rate) - l * sin(-rate);
+            l.normalize();
+            u.normalize();
             break;
 
         case '5':
             u = u * cos(rate) + r * sin(rate);
             r = r * cos(rate) - u * sin(rate);
+            u.normalize();
+            r.normalize();
             break;
 
         case '6':
             u = u * cos(-rate) + r * sin(-rate);
             r = r * cos(-rate) - u * sin(-rate);
+            u.normalize();
+            r.normalize();
             break;
         case 'p':
             // print all vectors
             cout << "--------------------------------------" << endl;
             cout << "pos: " << pos.x << " " << pos.y << " " << pos.z << endl;
-            cout << "l: " << l.x << " " << l.y << " " << l.z << endl;
-            cout << "r: " << r.x << " " << r.y << " " << r.z << endl;
-            cout << "u: " << u.x << " " << u.y << " " << u.z << endl;
+            cout << "l: " << l.x << " " << l.y << " " << l.z << " || " << l.norm() << endl;
+            cout << "r: " << r.x << " " << r.y << " " << r.z << " || " << r.norm() << endl;
+            cout << "u: " << u.x << " " << u.y << " " << u.z << " || " << u.norm() << endl;
             cout << "angle: " << angle << endl;
-            cout << "lambda: " << sqrt(u.x * u.x + u.y * u.y + u.z * u.z) << endl;
             break;
 
         default:
@@ -162,7 +131,7 @@ void keyboardListener(unsigned char key, int xx, int yy) {
 
 /* Callback handler for special-key event */
 void specialKeyListener(int key, int x, int y) {
-    double rate = 2;
+    double rate = 3.5;
     switch (key) {
         case GLUT_KEY_UP:
             pos = pos + l * rate;
@@ -199,6 +168,8 @@ void specialKeyListener(int key, int x, int y) {
     glutPostRedisplay();
 }
 void initGlobalVars() {
+    pointBuffer.resize(width, vector<point>(height));
+    rays.resize(width, vector<Ray>(height));
     // camera vectors
     pos = {0, -100, 20};
     l = {0, 1, 0};

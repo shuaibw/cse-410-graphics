@@ -9,7 +9,8 @@
 using namespace std;
 // Class signatures
 class CheckerBoard;
-class Point;
+class point;
+class Ray;
 class Sphere;
 class Pyramid;
 class Cube;
@@ -21,9 +22,15 @@ void drawAxes();
 void drawCheckerBoard();
 // Helper variables
 float PI = acos(-1);
-const int LEN = 1000; // axis length
-float angle = 0.0f; // rotation control
+const int LEN = 1000;  // axis length
+float angle = 0.0f;    // rotation control
 // Global variables
+extern point pos;  // position of the eye
+extern point l;    // look/forward direction
+extern point r;    // right direction
+extern point u;    // up direction
+extern bool isAxes;
+
 double nearPlane, farPlane, fovY, aspectRatio;
 int levelOfRecursion, width, height;
 int numObjects, numNormLights, numSpotLights;
@@ -32,6 +39,8 @@ vector<Pyramid> pyramids;
 vector<Cube> cubes;
 vector<NormalLightSource> normLights;
 vector<SpotLightSource> spotLights;
+vector<vector<point>> pointBuffer;
+vector<vector<Ray>> rays;
 
 // class definitions
 class CheckerBoard {
@@ -319,7 +328,8 @@ class SpotLightSource {
     }
 };
 
-struct point {
+class point {
+   public:
     GLdouble x, y, z;
     point(double x, double y, double z)
         : x{x}, y{y}, z{z} {}
@@ -357,18 +367,32 @@ struct point {
         return temp;
     }
     // normalize
-    void normalize() {
+    point normalize() {
         GLdouble scale = sqrt(x * x + y * y + z * z);
         if (scale >= 0.01) {
             x /= scale;
             y /= scale;
             z /= scale;
         }
+        return *this;
     }
     point cross(const point& p) const {
         return point(y * p.z - z * p.y, z * p.x - x * p.z,
                      x * p.y - y * p.x);
     }
+    double norm() const {
+        return sqrt(x * x + y * y + z * z);
+    }
+};
+
+class Ray {
+   public:
+    point origin;
+    point direction;
+    Ray(point origin, point direction)
+        : origin{origin}, direction{direction} {}
+    Ray()
+        : origin{}, direction{} {}
 };
 
 void readInputFile(string fileName) {
@@ -506,5 +530,32 @@ void drawCheckerBoard() {
             glVertex3f(i, j + cboard.width, 0);
         }
         glEnd();
+    }
+}
+
+void generateRays() {
+    double screenWidth = 2 * nearPlane * tan(fovY / 2);
+    double aspectRatio = (double)width / (double)height;
+    double screenHeight = screenWidth / aspectRatio;  // Using aspect ratio
+
+    point midpoint = pos + l * nearPlane;
+
+    // Calculate the top-left corner of the screen in the 3D world
+    point topLeft = midpoint + (u * (screenHeight / 2)) - (r * (screenWidth / 2));
+
+    double pixelWidth = screenWidth / width;
+    double pixelHeight = screenHeight / height;
+
+    for (int i = 0; i < width; i++) {
+        for (int j = 0; j < height; j++) {
+            // Calculate the 3D point for this pixel in the OpenGL world
+            pointBuffer[i][j] = topLeft + (r * i * pixelWidth) - (u * j * pixelHeight);
+
+            // Generate the ray for this pixel
+            rays[i][j].origin = pos;
+            point dir = pointBuffer[i][j] - pos;
+            dir.normalize();
+            rays[i][j].direction = dir;
+        }
     }
 }
