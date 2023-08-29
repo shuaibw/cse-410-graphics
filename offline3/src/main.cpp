@@ -4,8 +4,6 @@
 #include "utility.h"
 #include <iostream>
 using namespace std;
-void handleFixedUpwardRotation();
-void handleFixedDownwardRotation();
 /* Initialize OpenGL Graphics */
 void initGL() {
     // Set "clearing" or background color
@@ -34,7 +32,7 @@ void display() {
               u.x, u.y, u.z);
     if (isAxes) drawAxes();
     drawCheckerBoard();
-    glRotatef(angle, 0.0f, 1.0f, 0.0f);
+    glRotatef(angle, 0.0f, 0.0f, 1.0f);
     for (const auto& sphere : spheres) {
         sphere.draw();
     }
@@ -122,7 +120,9 @@ void keyboardListener(unsigned char key, int xx, int yy) {
             cout << "u: " << u.x << " " << u.y << " " << u.z << " || " << u.norm() << endl;
             cout << "angle: " << angle << endl;
             break;
-
+        case '0':
+            capture();
+            break;
         default:
             break;
     }
