@@ -6,14 +6,12 @@
 #include <math.h>
 #include <GL/glut.h>
 #include "bitmap_image.hpp"
-#include "helper.h"
 
 using namespace std;
 // Class signatures
 class CheckerBoard;
 class point;
 class Ray;
-class Intersection;
 class Sphere;
 class Pyramid;
 class Cube;
@@ -46,6 +44,17 @@ vector<vector<point>> pointBuffer;
 vector<vector<Ray>> rays;
 
 // class definitions
+
+class Intersection {
+   public:
+    bool doesIntersect;
+    double t;
+    point intersectionPoint;
+    Intersection()
+        : doesIntersect{false}, t{0}, intersectionPoint{} {}
+    Intersection(bool doesIntersect, double t, point intersectionPoint)
+        : doesIntersect{doesIntersect}, t{t}, intersectionPoint{intersectionPoint} {}
+};
 class CheckerBoard {
    public:
     int width;
@@ -56,26 +65,33 @@ class CheckerBoard {
         os << "ka: " << cboard.ka << " kd: " << cboard.kd << " kr: " << cboard.kr << endl;
         return os;
     }
-    
+
     Intersection intersect(Ray ray) const {
-        Intersection intersection;
-        point origin = ray.origin;
-        point direction = ray.direction;
-        point normal = point(0, 0, 1);
-        double t = (point(0, 0, 0) - origin).dot(normal) / direction.dot(normal);
-        point ip = origin + direction * t;
-        if (t < 0 || t > farPlane) {
-            intersection.doesIntersect = false;
-            return intersection;
+        point N = {0, 0, 1};  // Normal of the checkerboard (XY plane)
+        point P = {0, 0, 0};  // A point on the checkerboard (XY plane)
+
+        double denominator = N.dot(ray.direction);
+
+        // If the ray is parallel to the checkerboard, no intersection
+        if (fabs(denominator) < 1e-6) {
+            return {false, 0, {}};
         }
-        if (abs(ip.x) > LEN || abs(ip.y) > LEN) {
-            intersection.doesIntersect = false;
-            return intersection;
+
+        double t = (P - ray.origin).dot(N) / denominator;
+
+        // If t < 0, the intersection is behind the ray's origin
+        if (t < 0) {
+            return {false, 0, {}};
         }
-        intersection.doesIntersect = true;
-        intersection.t = t;
-        intersection.ip = ip;
-        return intersection;
+
+        point intersectionPoint = ray.origin + ray.direction * t;
+
+        // Optional: Check if the intersection point is within a certain boundary of the checkerboard
+        // if (fabs(intersectionPoint.x) > cboard.width || fabs(intersectionPoint.y) > cboard.width) {
+        //     return {false, 0, {}};
+        // }
+
+        return {true, t, intersectionPoint};
     }
 };
 CheckerBoard cboard;
@@ -162,6 +178,8 @@ class Sphere {
         }
         glEnd();
     }
+    // generate vertices for +X face only by intersecting 2 circular planes
+    // (longitudinal and latitudinal) at the given longitude/latitude angles
     void buildUnitPositiveX() {
         const float DEG2RAD = acos(-1) / 180.0f;
 
@@ -217,35 +235,26 @@ class Sphere {
     }
 
     Intersection intersect(Ray ray) const {
-        Intersection intersection;
-        point origin = ray.origin;
-        point direction = ray.direction;
-        point center = point(x, y, z);
-        point oc = origin - center;
-        double a = direction.dot(direction);
-        double b = 2 * oc.dot(direction);
-        double c = oc.dot(oc) - radius * radius;
+        point center = {x, y, y};
+        point OC = ray.origin - center;
+        double a = ray.direction.dot(ray.direction);
+        double b = 2.0 * OC.dot(ray.direction);
+        double c = OC.dot(OC) - r * r;
+
         double discriminant = b * b - 4 * a * c;
         if (discriminant < 0) {
-            intersection.doesIntersect = false;
-            return intersection;
-        }
-        double t1 = (-b + sqrt(discriminant)) / (2 * a);
-        double t2 = (-b - sqrt(discriminant)) / (2 * a);
-        if (t1 < 0 && t2 < 0) {
-            intersection.doesIntersect = false;
-            return intersection;
-        }
-        if (t1 < 0) {
-            intersection.t = t2;
-        } else if (t2 < 0) {
-            intersection.t = t1;
+            return {false, 0, {}};
         } else {
-            intersection.t = min(t1, t2);
+            double t1 = (-b - sqrt(discriminant)) / (2.0 * a);
+            double t2 = (-b + sqrt(discriminant)) / (2.0 * a);
+            if (t1 > 0) {
+                return {true, t1, ray.origin + ray.direction * t1};
+            } else if (t2 > 0) {
+                return {true, t2, ray.origin + ray.direction * t2};
+            } else {
+                return {false, 0, {}};
+            }
         }
-        intersection.ip = origin + direction * intersection.t;
-        intersection.doesIntersect = true;
-        return intersection;
     }
 };
 
@@ -292,84 +301,6 @@ class Pyramid {
         glVertex3f(x + width, y + width, z);
         glVertex3f(x + width / 2, y + width / 2, z + height);
         glEnd();
-    }
-
-    bool rayTriangleIntersect(const Ray& ray, const point& v0, const point& v1, const point& v2, double& t) const {
-        point e1 = v1 - v0;
-        point e2 = v2 - v0;
-        point h = ray.direction.cross(e2);
-        double a = e1.dot(h);
-
-        if (a > -1e-6 && a < 1e-6)
-            return false;
-
-        double f = 1.0 / a;
-        point s = ray.origin - v0;
-        double u = f * s.dot(h);
-
-        if (u < 0.0 || u > 1.0)
-            return false;
-
-        point q = s.cross(e1);
-        double v = f * ray.direction.dot(q);
-
-        if (v < 0.0 || u + v > 1.0)
-            return false;
-
-        t = f * e2.dot(q);
-        if (t > 1e-6)
-            return true;
-
-        return false;
-    }
-
-    Intersection intersect(const Ray& ray) const {
-        Intersection intersection;
-        intersection.doesIntersect = false;
-        double tMin = std::numeric_limits<double>::max();
-
-        point apex = point(x + width / 2, y + width / 2, z + height);
-        point v0 = apex;
-        point v1 = point(x, y, z);
-        point v2 = point(x + width, y, z);
-        point v3 = point(x + width, y + width, z);
-        point v4 = point(x, y + width, z);
-
-        // Check intersection with each triangle
-        double t;
-        if (rayTriangleIntersect(ray, v0, v1, v2, t) && t < tMin) {
-            tMin = t;
-            intersection.doesIntersect = true;
-        }
-        if (rayTriangleIntersect(ray, v0, v2, v3, t) && t < tMin) {
-            tMin = t;
-            intersection.doesIntersect = true;
-        }
-        if (rayTriangleIntersect(ray, v0, v3, v4, t) && t < tMin) {
-            tMin = t;
-            intersection.doesIntersect = true;
-        }
-        if (rayTriangleIntersect(ray, v0, v4, v1, t) && t < tMin) {
-            tMin = t;
-            intersection.doesIntersect = true;
-        }
-
-        // Check intersection with base quad (2 triangles)
-        if (rayTriangleIntersect(ray, v1, v2, v3, t) && t < tMin) {
-            tMin = t;
-            intersection.doesIntersect = true;
-        }
-        if (rayTriangleIntersect(ray, v1, v3, v4, t) && t < tMin) {
-            tMin = t;
-            intersection.doesIntersect = true;
-        }
-
-        if (intersection.doesIntersect) {
-            intersection.t = tMin;
-            intersection.ip = ray.origin + ray.direction * tMin;
-        }
-
-        return intersection;
     }
 };
 
@@ -431,6 +362,7 @@ class Cube {
 
         glEnd();  // End of drawing color-cube
     }
+
     Intersection intersect(Ray ray) const {
         double tmin = (x - ray.origin.x) / ray.direction.x;
         double tmax = (x + side - ray.origin.x) / ray.direction.x;
@@ -502,6 +434,76 @@ class SpotLightSource {
         os << "cutOffAngle: " << light.cutOffAngle << endl;
         return os;
     }
+};
+
+class point {
+   public:
+    GLdouble x, y, z;
+    point(double x, double y, double z)
+        : x{x}, y{y}, z{z} {}
+    point()
+        : x{0}, y{0}, z{0} {}
+    // overload - operator
+    point operator-(const point& p) const {
+        point temp;
+        temp.x = x - p.x;
+        temp.y = y - p.y;
+        temp.z = z - p.z;
+        return temp;
+    }
+    // overload + operator
+    point operator+(const point& p) const {
+        point temp;
+        temp.x = x + p.x;
+        temp.y = y + p.y;
+        temp.z = z + p.z;
+        return temp;
+    }
+    // overload = operator
+    point operator=(const point& p) {
+        x = p.x;
+        y = p.y;
+        z = p.z;
+        return *this;
+    }
+    // overload * operator
+    point operator*(const double& d) const {
+        point temp;
+        temp.x = x * d;
+        temp.y = y * d;
+        temp.z = z * d;
+        return temp;
+    }
+    // normalize
+    point normalize() {
+        GLdouble scale = sqrt(x * x + y * y + z * z);
+        if (scale >= 0.01) {
+            x /= scale;
+            y /= scale;
+            z /= scale;
+        }
+        return *this;
+    }
+    point cross(const point& p) const {
+        return point(y * p.z - z * p.y, z * p.x - x * p.z,
+                     x * p.y - y * p.x);
+    }
+    double norm() const {
+        return sqrt(x * x + y * y + z * z);
+    }
+    double dot(point b) const {
+        return (x * b.x + y * b.y + z * b.z);
+    }
+};
+
+class Ray {
+   public:
+    point origin;
+    point direction;
+    Ray(point origin, point direction)
+        : origin{origin}, direction{direction} {}
+    Ray()
+        : origin{}, direction{} {}
 };
 
 void readInputFile(string fileName) {
@@ -628,21 +630,22 @@ void drawCheckerBoard() {
 }
 
 void generateRays() {
-    double screenWidth = 2 * nearPlane * tan(fovY * M_PI / 360);
+    double screenWidth = 2 * nearPlane * tan(fovY / 2);
     double aspectRatio = (double)width / (double)height;
     double screenHeight = screenWidth / aspectRatio;  // Using aspect ratio
 
     point midpoint = pos + l * nearPlane;
+
     // Calculate the top-left corner of the screen in the 3D world
     point topLeft = midpoint + (u * (screenHeight / 2)) - (r * (screenWidth / 2));
-    double du = screenWidth / width;
-    double dv = screenHeight / height;
-    topLeft = topLeft + r * (0.5 * du) - u * (0.5 * dv);
+
+    double pixelWidth = screenWidth / width;
+    double pixelHeight = screenHeight / height;
 
     for (int i = 0; i < width; i++) {
         for (int j = 0; j < height; j++) {
             // Calculate the 3D point for this pixel in the OpenGL world
-            pointBuffer[i][j] = topLeft + (r * i * du) - (u * j * dv);
+            pointBuffer[i][j] = topLeft + (r * i * pixelWidth) - (u * j * pixelHeight);
 
             // Generate the ray for this pixel
             rays[i][j].origin = pos;
@@ -652,67 +655,59 @@ void generateRays() {
         }
     }
 }
-
 void capture() {
-    bitmap_image img(width, height);
-    img.set_all_channels(0, 0, 0);
-    // now populate pointBuffer with the color of the object that intersects witht the rays
-    generateRays();
-    for (int i = 0; i < width; i++) {
-        for (int j = 0; j < height; j++) {
-            Ray ray = rays[i][j];
-            double tMin = std::numeric_limits<double>::max();
-            double r = 0, g = 0, b = 0;
+    bitmap_image image(width, height);
+    image.set_all_channels(0, 0, 0);  // set background to black
+
+    double planeDistance = (height / 2.0) / tan(fovY / 2.0);
+    point topLeft = pos + l * planeDistance - r * (width / 2) + u * (height / 2);
+    topLeft = topLeft + r * 0.5 - u * 0.5;
+
+    for (int i = 0; i < width; ++i) {
+        for (int j = 0; j < height; ++j) {
+            point curPixel = topLeft + r * i - u * j;
+            Ray ray;
+            ray.origin = pos;
+            ray.direction = (curPixel - pos).normalize();
+
+            Intersection nearestIntersection;
+            nearestIntersection.t = std::numeric_limits<double>::max();
+
+            // Check intersection with each Sphere
             for (const auto& sphere : spheres) {
-                Intersection is = sphere.intersect(ray);
-                if (!is.doesIntersect) continue;
-                if (is.t < tMin) {
-                    tMin = is.t;
-                    r = sphere.r;
-                    g = sphere.g;
-                    b = sphere.b;
-                }
-            }
-            for (const auto& pyramid : pyramids) {
-                Intersection is = pyramid.intersect(ray);
-                if (!is.doesIntersect) continue;
-                if (is.t < tMin) {
-                    tMin = is.t;
-                    r = pyramid.r;
-                    g = pyramid.g;
-                    b = pyramid.b;
-                }
-            }
-            for (const auto& cube : cubes) {
-                Intersection is = cube.intersect(ray);
-                if (!is.doesIntersect) continue;
-                if (is.t < tMin) {
-                    tMin = is.t;
-                    r = cube.r;
-                    g = cube.g;
-                    b = cube.b;
-                }
-            }
-            Intersection is = cboard.intersect(ray);
-            if (is.doesIntersect && is.t < tMin) {
-                tMin = is.t;
-                int xSquare = (int)floor(is.ip.x / cboard.width);
-                int ySquare = (int)floor(is.ip.y / cboard.width);
-                bool isBlack = (xSquare + ySquare) % 2 == 0;
-                if (isBlack) {
-                    r = 0;
-                    g = 0;
-                    b = 0;
-                } else {
-                    r = 1;
-                    g = 1;
-                    b = 1;
+                Intersection intersection = sphere.intersect(ray);
+                if (intersection.doesIntersect && intersection.t < nearestIntersection.t) {
+                    nearestIntersection = intersection;
                 }
             }
 
-            img.set_pixel(i, j, r * 255, g * 255, b * 255);
+            // Check intersection with each Cube
+            for (const auto& cube : cubes) {
+                Intersection intersection = cube.intersect(ray);
+                if (intersection.doesIntersect && intersection.t < nearestIntersection.t) {
+                    nearestIntersection = intersection;
+                }
+            }
+
+            // Check intersection with each Pyramid
+            // for (const auto& pyramid : pyramids) {
+            //     Intersection intersection = pyramid.intersect(ray);
+            //     if (intersection.doesIntersect && intersection.t < nearestIntersection.t) {
+            //         nearestIntersection = intersection;
+            //     }
+            // }
+
+            // Check intersection with Checkerboard
+            Intersection intersection = cboard.intersect(ray);
+            if (intersection.doesIntersect && intersection.t < nearestIntersection.t) {
+                nearestIntersection = intersection;
+            }
+
+            if (nearestIntersection.doesIntersect) {
+                // image.set_pixel(i, j, nearestIntersection.color.r, nearestIntersection.color.g, nearestIntersection.color.b);
+            }
         }
     }
-    img.save_image("out.bmp");
-    img.clear();
+
+    image.save_image("out.bmp");
 }
