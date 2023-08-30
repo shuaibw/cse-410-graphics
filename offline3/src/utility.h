@@ -698,15 +698,15 @@ void capture() {
                 tMin = is.t;
                 int xSquare = (int)floor(is.ip.x / cboard.width);
                 int ySquare = (int)floor(is.ip.y / cboard.width);
-                bool isBlack = (xSquare + ySquare) % 2 == 0;
-                if (isBlack) {
-                    r = 0;
-                    g = 0;
-                    b = 0;
-                } else {
+                bool isWhite = (xSquare + ySquare) % 2 == 0;
+                if (isWhite) {
                     r = 1;
                     g = 1;
                     b = 1;
+                } else {
+                    r = 0;
+                    g = 0;
+                    b = 0;
                 }
             }
 
