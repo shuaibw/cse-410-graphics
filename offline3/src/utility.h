@@ -19,14 +19,18 @@ class Pyramid;
 class Cube;
 class NormalLightSource;
 class SpotLightSource;
+class Color;
+class Coeffs;
 // Function signatures
 void readInputFile(string fileName);
 void drawAxes();
 void drawCheckerBoard();
+void generateRays();
+void capture();
+Color traceRay(const Ray& ray, int levelOfRecursion);
 // Helper variables
 float PI = acos(-1);
 const int LEN = 2000;  // axis length
-float angle = 0.0f;    // rotation control
 // Global variables
 extern point pos;  // position of the eye
 extern point l;    // look/forward direction
@@ -76,6 +80,11 @@ class CheckerBoard {
         intersection.doesIntersect = true;
         intersection.t = t;
         intersection.ip = ip;
+        int xSquare = (int)floor(intersection.ip.x / width);
+        int ySquare = (int)floor(intersection.ip.y / width);
+        bool isWhite = (xSquare + ySquare) % 2 == 0;
+        intersection.color = isWhite ? Color(1, 1, 1) : Color(0, 0, 0);
+        intersection.coeffs = Coeffs(this->ka, this->kd, 0, this->kr, 0);
         return intersection;
     }
 };
@@ -134,6 +143,8 @@ class Sphere {
         }
         intersection.ip = origin + direction * intersection.t;
         intersection.doesIntersect = true;
+        intersection.color = Color(this->r, this->g, this->b);
+        intersection.coeffs = Coeffs(this->ka, this->kd, this->ks, this->kr, this->shine);
         return intersection;
     }
 };
@@ -256,6 +267,8 @@ class Pyramid {
         if (intersection.doesIntersect) {
             intersection.t = tMin;
             intersection.ip = ray.origin + ray.direction * tMin;
+            intersection.color = Color(this->r, this->g, this->b);
+            intersection.coeffs = Coeffs(this->ka, this->kd, this->ks, this->kr, this->shine);
         }
 
         return intersection;
@@ -323,7 +336,6 @@ class Cube {
     Intersection intersect(Ray ray) const {
         double tmin = (x - ray.origin.x) / ray.direction.x;
         double tmax = (x + side - ray.origin.x) / ray.direction.x;
-
         if (tmin > tmax) std::swap(tmin, tmax);
 
         double tymin = (y - ray.origin.y) / ray.direction.y;
@@ -332,7 +344,7 @@ class Cube {
         if (tymin > tymax) std::swap(tymin, tymax);
 
         if ((tmin > tymax) || (tymin > tmax))
-            return {false, 0, {}};
+            return {false, 0, {}, {}, {}};
 
         if (tymin > tmin)
             tmin = tymin;
@@ -346,7 +358,7 @@ class Cube {
         if (tzmin > tzmax) std::swap(tzmin, tzmax);
 
         if ((tmin > tzmax) || (tzmin > tmax))
-            return {false, 0, {}};
+            return {false, 0, {}, {}, {}};
 
         if (tzmin > tmin)
             tmin = tzmin;
@@ -356,14 +368,14 @@ class Cube {
 
         if (tmin < 0) {
             if (tmax < 0) {
-                return {false, 0, {}};
+                return {false, 0, {}, {}, {}};
             } else {
                 // We're inside the cube
-                return {true, tmax, ray.origin + ray.direction * tmax};
+                return {true, tmax, ray.origin + ray.direction * tmax, Color(this->r, this->g, this->b), Coeffs(ka, kd, ks, kr, shine)};
             }
         }
 
-        return {true, tmin, ray.origin + ray.direction * tmin};
+        return {true, tmin, ray.origin + ray.direction * tmin, Color(this->r, this->g, this->b), Coeffs(ka, kd, ks, kr, shine)};
     }
 };
 
@@ -611,64 +623,60 @@ void generateRays() {
 }
 
 void capture() {
+    generateRays();
     bitmap_image img(width, height);
     img.set_all_channels(0, 0, 0);
-    generateRays();
     for (int i = 0; i < width; i++) {
         for (int j = 0; j < height; j++) {
             Ray ray = rays[i][j];
-            double tMin = std::numeric_limits<double>::max();
-            double r = 0, g = 0, b = 0;
-            for (const auto& sphere : spheres) {
-                Intersection is = sphere.intersect(ray);
-                if (!is.doesIntersect) continue;
-                if (is.t < tMin) {
-                    tMin = is.t;
-                    r = sphere.r * sphere.ka;
-                    g = sphere.g * sphere.ka;
-                    b = sphere.b * sphere.ka;
-                }
-            }
-            for (const auto& pyramid : pyramids) {
-                Intersection is = pyramid.intersect(ray);
-                if (!is.doesIntersect) continue;
-                if (is.t < tMin) {
-                    tMin = is.t;
-                    r = pyramid.r * pyramid.ka;
-                    g = pyramid.g * pyramid.ka;
-                    b = pyramid.b * pyramid.ka;
-                }
-            }
-            for (const auto& cube : cubes) {
-                Intersection is = cube.intersect(ray);
-                if (!is.doesIntersect) continue;
-                if (is.t < tMin) {
-                    tMin = is.t;
-                    r = cube.r * cube.ka;
-                    g = cube.g * cube.ka;
-                    b = cube.b * cube.ka;
-                }
-            }
-            Intersection is = cboard.intersect(ray);
-            if (is.doesIntersect && is.t < tMin) {
-                tMin = is.t;
-                int xSquare = (int)floor(is.ip.x / cboard.width);
-                int ySquare = (int)floor(is.ip.y / cboard.width);
-                bool isWhite = (xSquare + ySquare) % 2 == 0;
-                if (isWhite) {
-                    r = 1 * cboard.ka;
-                    g = 1 * cboard.ka;
-                    b = 1 * cboard.ka;
-                } else {
-                    r = 0;
-                    g = 0;
-                    b = 0;
-                }
-            }
-
-            img.set_pixel(i, j, r * 255, g * 255, b * 255);
+            Color c = traceRay(ray, levelOfRecursion);
+            img.set_pixel(i, j, c.r * 255, c.g * 255, c.b * 255);
         }
     }
     img.save_image("out.bmp");
     img.clear();
+}
+
+Color traceRay(const Ray& ray, int depth) {
+    if (depth == 0) {
+        return Color(0, 0, 0);  // Return black if depth is zero
+    }
+
+    double tMin = std::numeric_limits<double>::max();
+    Intersection closestIntersection;
+    // Find the closest intersection
+    for (const auto& sphere : spheres) {
+        Intersection is = sphere.intersect(ray);
+        if (!is.doesIntersect) continue;
+        if (is.t < tMin) {
+            tMin = is.t;
+            closestIntersection = is;
+        }
+    }
+    for (const auto& pyramid : pyramids) {
+        Intersection is = pyramid.intersect(ray);
+        if (!is.doesIntersect) continue;
+        if (is.t < tMin) {
+            tMin = is.t;
+            closestIntersection = is;
+        }
+    }
+    for (const auto& cube : cubes) {
+        Intersection is = cube.intersect(ray);
+        if (!is.doesIntersect) continue;
+        if (is.t < tMin) {
+            tMin = is.t;
+            closestIntersection = is;
+        }
+    }
+    Intersection is = cboard.intersect(ray);
+    if (is.doesIntersect && is.t < tMin) {
+        tMin = is.t;
+        closestIntersection = is;
+    }
+
+    if (!closestIntersection.doesIntersect) {
+        return Color(0, 0, 0);  // Return black if no intersection
+    }
+    return closestIntersection.color;
 }

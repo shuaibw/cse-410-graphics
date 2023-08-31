@@ -32,7 +32,6 @@ void display() {
               u.x, u.y, u.z);
     if (isAxes) drawAxes();
     drawCheckerBoard();
-    glRotatef(angle, 0.0f, 0.0f, 1.0f);
     for (const auto& sphere : spheres) {
         sphere.draw();
     }
@@ -66,16 +65,6 @@ void reshapeListener(GLsizei width, GLsizei height) {  // GLsizei for non-negati
 void keyboardListener(unsigned char key, int xx, int yy) {
     double rate = 0.04;
     switch (key) {
-        case 'a':
-            // rotate the object in clockwise direction
-            angle -= 5;
-            if (angle <= -360) angle = 0;
-            break;
-        case 'd':
-            // rotate the object in anti-clockwise direction
-            angle += 5;
-            if (angle >= 360) angle = 0;
-            break;
         case '1':
             r = r * cos(rate) + l * sin(rate);
             l = l * cos(rate) - r * sin(rate);
@@ -124,7 +113,6 @@ void keyboardListener(unsigned char key, int xx, int yy) {
             cout << "l: " << l.x << " " << l.y << " " << l.z << " || " << l.norm() << endl;
             cout << "r: " << r.x << " " << r.y << " " << r.z << " || " << r.norm() << endl;
             cout << "u: " << u.x << " " << u.y << " " << u.z << " || " << u.norm() << endl;
-            cout << "angle: " << angle << endl;
             break;
         case '0':
             capture();

@@ -66,12 +66,41 @@ class point {
         return acos(dot(b) / (norm() * b.norm()));
     }
 };
+class Color {
+   public:
+    double r, g, b;
+    Color(double r, double g, double b)
+        : r{r}, g{g}, b{b} {}
+    Color()
+        : r{0}, g{0}, b{0} {}
+    Color operator*(const double& d) const {
+        Color temp;
+        temp.r = r * d;
+        temp.g = g * d;
+        temp.b = b * d;
+        return temp;
+    }
+};
 
+class Coeffs {
+   public:
+    double ka, kd, ks, kr, shine;
+    Coeffs(double ka, double kd, double ks, double kr, double shine)
+        : ka{ka}, kd{kd}, ks{ks}, kr{kr}, shine{shine} {}
+    Coeffs()
+        : ka{0}, kd{0}, ks{0}, kr{0}, shine{0} {}
+};
 class Intersection {
    public:
     bool doesIntersect;
     double t;
     point ip;
+    Color color;
+    Coeffs coeffs;
+    Intersection(bool doesIntersect, double t, point ip, Color color, Coeffs coeffs)
+        : doesIntersect{doesIntersect}, t{t}, ip{ip}, color{color}, coeffs{coeffs} {}
+    Intersection()
+        : doesIntersect{false}, t{0}, ip{}, color{}, coeffs{} {}
 };
 
 class Ray {
