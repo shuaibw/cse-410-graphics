@@ -97,8 +97,9 @@ class Intersection {
     point ip;
     Color color;
     Coeffs coeffs;
-    Intersection(bool doesIntersect, double t, point ip, Color color, Coeffs coeffs)
-        : doesIntersect{doesIntersect}, t{t}, ip{ip}, color{color}, coeffs{coeffs} {}
+    point normal;
+    Intersection(bool doesIntersect, double t, point ip, Color color, Coeffs coeffs, point normal)
+        : doesIntersect{doesIntersect}, t{t}, ip{ip}, color{color}, coeffs{coeffs}, normal{normal} {}
     Intersection()
         : doesIntersect{false}, t{0}, ip{}, color{}, coeffs{} {}
 };
@@ -112,3 +113,40 @@ class Ray {
     Ray()
         : origin{}, direction{} {}
 };
+
+bool rayTriangleIntersect(const Ray& ray, const point& v0, const point& v1, const point& v2, double& t) {
+    point e1 = v1 - v0;
+    point e2 = v2 - v0;
+    point h = ray.direction.cross(e2);
+    double a = e1.dot(h);
+
+    if (a > -1e-6 && a < 1e-6)
+        return false;
+
+    double f = 1.0 / a;
+    point s = ray.origin - v0;
+    double u = f * s.dot(h);
+
+    if (u < 0.0 || u > 1.0)
+        return false;
+
+    point q = s.cross(e1);
+    double v = f * ray.direction.dot(q);
+
+    if (v < 0.0 || u + v > 1.0)
+        return false;
+
+    t = f * e2.dot(q);
+    if (t > 1e-6)
+        return true;
+
+    return false;
+}
+
+bool rayQuadIntersect(const Ray& ray, const point& v0, const point& v1, const point& v2, const point& v3, double& t) {
+    if (rayTriangleIntersect(ray, v0, v1, v2, t))
+        return true;
+    if (rayTriangleIntersect(ray, v0, v2, v3, t))
+        return true;
+    return false;
+}
