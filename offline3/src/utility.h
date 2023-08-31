@@ -62,9 +62,11 @@ class CheckerBoard {
         point origin = ray.origin;
         point direction = ray.direction;
         point normal = point(0, 0, 1);
-        double t = (point(0, 0, 0) - origin).dot(normal) / direction.dot(normal);
+        double t = -origin.dot(normal) / direction.dot(normal);
         point ip = origin + direction * t;
-        if (t < 0 || t > farPlane) {
+        double dist = (ip-origin).norm();
+        double theta = l.angleBetween(ip-origin);
+        if (t < 0 || dist > (farPlane/cos(theta))) {
             intersection.doesIntersect = false;
             return intersection;
         }
@@ -510,7 +512,7 @@ void readInputFile(string fileName) {
     fin >> nearPlane >> farPlane >> fovY >> aspectRatio;
     fin >> levelOfRecursion;
     fin >> width;
-    height = width;
+    height = width / aspectRatio;
     fin >> cboard.width;
     fin >> cboard.ka >> cboard.kd >> cboard.kr;
 
@@ -629,8 +631,8 @@ void drawCheckerBoard() {
 
 void generateRays() {
     double screenWidth = 2 * nearPlane * tan(fovY * M_PI / 360);
-    double aspectRatio = (double)width / (double)height;
-    double screenHeight = screenWidth / aspectRatio;  // Using aspect ratio
+    double fovX = fovY * aspectRatio;
+    double screenHeight = 2 * nearPlane * tan(fovX * M_PI / 360);
 
     point midpoint = pos + l * nearPlane;
     // Calculate the top-left corner of the screen in the 3D world

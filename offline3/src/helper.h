@@ -36,6 +36,13 @@ class point {
         temp.z = z * d;
         return temp;
     }
+    point operator-() const {
+        point temp;
+        temp.x = -x;
+        temp.y = -y;
+        temp.z = -z;
+        return temp;
+    }
     point normalize() {
         GLdouble scale = sqrt(x * x + y * y + z * z);
         if (scale >= 0.01) {
@@ -54,6 +61,9 @@ class point {
     }
     double dot(point b) const {
         return (x * b.x + y * b.y + z * b.z);
+    }
+    double angleBetween(point b) const {
+        return acos(dot(b) / (norm() * b.norm()));
     }
 };
 
