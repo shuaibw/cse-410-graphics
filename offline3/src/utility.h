@@ -29,6 +29,7 @@ void generateRays();
 void capture();
 Color traceRay(const Ray& ray, int levelOfRecursion);
 Intersection closestIntersectionWithObjects(const Ray& ray);
+bool checkIntersection(const Ray& ray);
 // Helper variables
 float PI = acos(-1);
 const int LEN = 2000;  // axis length
@@ -122,7 +123,7 @@ class Sphere {
         point direction = ray.direction;
         point center = point(x, y, z);
         point oc = origin - center;
-        double a = direction.dot(direction);
+        double a = 1.0;
         double b = 2 * oc.dot(direction);
         double c = oc.dot(oc) - radius * radius;
         double discriminant = b * b - 4 * a * c;
@@ -242,7 +243,7 @@ class Pyramid {
         if (rayTriangleIntersect(ray, v1, v3, v4, t) && t < tMin) {
             tMin = t;
             intersection.doesIntersect = true;
-            normal = (v4 - v1).cross(v1 - v1).normalize();
+            normal = (v4 - v1).cross(v3 - v1).normalize();
         }
 
         if (intersection.doesIntersect) {
@@ -416,8 +417,8 @@ class NormalLightSource {
     }
 
     bool illuminates(const Ray& objToLight) const {
-        Intersection intersection = closestIntersectionWithObjects(objToLight);
-        return !intersection.doesIntersect;
+        bool intersects = checkIntersection(objToLight);
+        return !intersects;
     }
 };
 
@@ -476,13 +477,11 @@ class SpotLightSource {
     }
 
     bool illuminates(const Ray& objToLight) const {
-        Intersection intersection = closestIntersectionWithObjects(objToLight);
-        if (intersection.doesIntersect) {
-            return false;
-        }
-        point lightDir = point(x, y, z) - objToLight.origin;
+        bool intersects = checkIntersection(objToLight);
+        if (intersects) return false;
+        point lightDir = objToLight.origin - point(x, y, z);
         lightDir.normalize();
-        double angle = (lightDir.angleBetween(point(dx, dy, dz))) * (180 / M_PI);
+        double angle = (lightDir.angleBetween(point(dx, dy, dz).normalize())) * (180 / M_PI);
         if (angle > cutOffAngle) {
             return false;
         }
@@ -667,16 +666,35 @@ Color traceRay(const Ray& ray, int depth) {
         point normal = closestIntersection.normal;
         double shininess = closestIntersection.coeffs.shine;
         double distance = (lightSource - ip).norm();
+        if (distance < EPSILON) continue;
         double scaleFactor = exp(-normLight.decay * distance * distance);
-        lambert += toSource.dot(normal) * scaleFactor;
-        point reflection = (normal * (2 * normal.dot(toSource)) - toSource).normalize();
-        // phong += pow(reflection.dot(toSource), shininess) * scaleFactor;
+        lambert += max(toSource.dot(normal) * scaleFactor, 0.0);
+        point incident = ray.direction;
+        point reflection = incident - normal * (2 * incident.dot(normal));
+        reflection.normalize();
+        phong += pow(reflection.dot(toSource), shininess) * scaleFactor;
+    }
+
+    for (const auto& spotLight : spotLights) {
+        point lightSource = point(spotLight.x, spotLight.y, spotLight.z);
+        point ip = closestIntersection.ip;
+        Ray objToLight = Ray(ip, (lightSource - ip).normalize());
+        if (!spotLight.illuminates(objToLight)) continue;
+
+        point toSource = objToLight.direction;
+        point normal = closestIntersection.normal;
+        double shininess = closestIntersection.coeffs.shine;
+        double distance = (lightSource - ip).norm();
+        double scaleFactor = exp(-spotLight.decay * distance * distance);
+        lambert += max(toSource.dot(normal) * scaleFactor, 0.0);
+        point incident = ray.direction;
+        point reflection = incident - normal * (2 * incident.dot(normal));
+        reflection.normalize();
+        phong += pow(reflection.dot(toSource), shininess) * scaleFactor;
     }
     closestIntersection.color += closestIntersection.color * closestIntersection.coeffs.kd * lambert;
     closestIntersection.color += closestIntersection.color * closestIntersection.coeffs.ks * phong;
 
-    // for (const auto& spotLight : spotLights) {
-    // }
     return closestIntersection.color;
 }
 
@@ -714,4 +732,22 @@ Intersection closestIntersectionWithObjects(const Ray& ray) {
         closestIntersection = is;
     }
     return closestIntersection;
+}
+
+bool checkIntersection(const Ray& ray) {
+    for (const auto& sphere : spheres) {
+        Intersection is = sphere.intersect(ray);
+        if (is.doesIntersect) return true;
+    }
+    for (const auto& pyramid : pyramids) {
+        Intersection is = pyramid.intersect(ray);
+        if (is.doesIntersect) return true;
+    }
+    for (const auto& cube : cubes) {
+        Intersection is = cube.intersect(ray);
+        if (is.doesIntersect) return true;
+    }
+    Intersection is = cboard.intersect(ray);
+    if (is.doesIntersect) return true;
+    return false;
 }
