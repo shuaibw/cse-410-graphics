@@ -42,7 +42,6 @@ vector<Pyramid> pyramids;
 vector<Cube> cubes;
 vector<NormalLightSource> normLights;
 vector<SpotLightSource> spotLights;
-vector<vector<point>> pointBuffer;
 vector<vector<Ray>> rays;
 
 // class definitions
@@ -56,7 +55,7 @@ class CheckerBoard {
         os << "ka: " << cboard.ka << " kd: " << cboard.kd << " kr: " << cboard.kr << endl;
         return os;
     }
-    
+
     Intersection intersect(Ray ray) const {
         Intersection intersection;
         point origin = ray.origin;
@@ -64,9 +63,9 @@ class CheckerBoard {
         point normal = point(0, 0, 1);
         double t = -origin.dot(normal) / direction.dot(normal);
         point ip = origin + direction * t;
-        double dist = (ip-origin).norm();
-        double theta = l.angleBetween(ip-origin);
-        if (t < 0 || dist > (farPlane/cos(theta))) {
+        double dist = (ip - origin).norm();
+        double theta = l.angleBetween(ip - origin);
+        if (t < 0 || dist > (farPlane / cos(theta))) {
             intersection.doesIntersect = false;
             return intersection;
         }
@@ -88,11 +87,8 @@ class Sphere {
     double ka, kd, ks, kr;
     double shine;
 
-    // Needed for drawing sphere
-    vector<float> verticesXPos;
-    int subdivision;
     Sphere()
-        : subdivision{4}, x{0}, y{0}, z{0}, radius{10}, r{255}, g{255}, b{255} {}
+        : x{0}, y{0}, z{0}, radius{10}, r{255}, g{255}, b{255} {}
     // override cout
     friend ostream& operator<<(ostream& os, const Sphere& sphere) {
         os << "Sphere: " << sphere.x << " " << sphere.y << " " << sphere.z << " " << sphere.radius << endl;
@@ -106,118 +102,9 @@ class Sphere {
         glColor3f(r, g, b);
         glPushMatrix();
         glTranslated(x, y, z);
-        drawPositiveX();  // +X
-
-        glPushMatrix();
-        glRotated(90, 0, 1, 0);
-        drawPositiveX();  // -Z
-        glPopMatrix();
-
-        glPushMatrix();
-        glRotated(180, 0, 1, 0);
-        drawPositiveX();  // -X
-        glPopMatrix();
-
-        glPushMatrix();
-        glRotated(-90, 0, 1, 0);
-        drawPositiveX();  // +Z
-        glPopMatrix();
-
-        glPushMatrix();
-        glRotated(90, 0, 0, 1);
-        drawPositiveX();  // +Y
-        glPopMatrix();
-
-        glPushMatrix();
-        glRotated(-90, 0, 0, 1);
-        drawPositiveX();  // -Y
-        glPopMatrix();
+        glutSolidSphere(radius, 64, 64);
         glPopMatrix();
     }
-    void drawPositiveX() const {
-        // draw the filled sphere from vertices
-        if (verticesXPos.size() == 0) {
-            throw("verticesXPos is empty");
-        }
-        vector<float> vertices = verticesXPos;
-        int pointsPerRow = (int)pow(2, subdivision) + 1;
-        int totalPoints = vertices.size() / 3;
-        int numRows = totalPoints / pointsPerRow;
-        glBegin(GL_QUADS);
-        for (int i = 0; i < totalPoints - 1 - pointsPerRow; i++) {
-            float x1 = vertices[i * 3];
-            float y1 = vertices[i * 3 + 1];
-            float z1 = vertices[i * 3 + 2];
-            float x2 = vertices[(i + 1) * 3];
-            float y2 = vertices[(i + 1) * 3 + 1];
-            float z2 = vertices[(i + 1) * 3 + 2];
-            float x3 = vertices[(i + pointsPerRow) * 3];
-            float y3 = vertices[(i + pointsPerRow) * 3 + 1];
-            float z3 = vertices[(i + pointsPerRow) * 3 + 2];
-            float x4 = vertices[(i + pointsPerRow + 1) * 3];
-            float y4 = vertices[(i + pointsPerRow + 1) * 3 + 1];
-            float z4 = vertices[(i + pointsPerRow + 1) * 3 + 2];
-            glVertex3f(x1, y1, z1);
-            glVertex3f(x2, y2, z2);
-            glVertex3f(x4, y4, z4);
-            glVertex3f(x3, y3, z3);
-        }
-        glEnd();
-    }
-    void buildUnitPositiveX() {
-        const float DEG2RAD = acos(-1) / 180.0f;
-
-        vector<float> vertices;
-        float n1[3];  // normal of longitudinal plane rotating along Y-axis
-        float n2[3];  // normal of latitudinal plane rotating along Z-axis
-        float v[3];   // direction vector intersecting 2 planes, n1 x n2
-        float a1;     // longitudinal angle along Y-axis
-        float a2;     // latitudinal angle along Z-axis
-
-        // compute the number of vertices per row, 2^n + 1
-        int pointsPerRow = (int)pow(2, subdivision) + 1;
-
-        // rotate latitudinal plane from 45 to -45 degrees along Z-axis (top-to-bottom)
-        for (unsigned int i = 0; i < pointsPerRow; ++i) {
-            // normal for latitudinal plane
-            // if latitude angle is 0, then normal vector of latitude plane is n2=(0,1,0)
-            // therefore, it is rotating (0,1,0) vector by latitude angle a2
-            a2 = DEG2RAD * (45.0f - 90.0f * i / (pointsPerRow - 1));
-            n2[0] = -sin(a2);
-            n2[1] = cos(a2);
-            n2[2] = 0;
-
-            // rotate longitudinal plane from -45 to 45 along Y-axis (left-to-right)
-            for (unsigned int j = 0; j < pointsPerRow; ++j) {
-                // normal for longitudinal plane
-                // if longitude angle is 0, then normal vector of longitude is n1=(0,0,-1)
-                // therefore, it is rotating (0,0,-1) vector by longitude angle a1
-                a1 = DEG2RAD * (-45.0f + 90.0f * j / (pointsPerRow - 1));
-                n1[0] = -sin(a1);
-                n1[1] = 0;
-                n1[2] = -cos(a1);
-
-                // find direction vector of intersected line, n1 x n2
-                v[0] = n1[1] * n2[2] - n1[2] * n2[1];
-                v[1] = n1[2] * n2[0] - n1[0] * n2[2];
-                v[2] = n1[0] * n2[1] - n1[1] * n2[0];
-
-                // normalize direction vector
-                float scale = 1 / sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
-                v[0] *= (scale * radius);
-                v[1] *= (scale * radius);
-                v[2] *= (scale * radius);
-
-                // add a vertex into array
-                vertices.push_back(v[0]);
-                vertices.push_back(v[1]);
-                vertices.push_back(v[2]);
-            }
-        }
-
-        verticesXPos = vertices;
-    }
-
     Intersection intersect(Ray ray) const {
         Intersection intersection;
         point origin = ray.origin;
@@ -489,6 +376,38 @@ class NormalLightSource {
         os << "NormalLightSource: " << light.x << " " << light.y << " " << light.z << " " << light.decay << endl;
         return os;
     }
+    void draw() const {
+        glPushMatrix();
+
+        glTranslated(x, y, z);
+
+        int numSegments = 20;                              // Number of cylindrical segments
+        double radius = 10.0;                              // Radius of the sphere
+        double segmentWidth = 2.0 * radius / numSegments;  // Width of each segment
+
+        for (int i = 0; i < numSegments; ++i) {
+            // Calculate the z-coordinate and radii for the front and back of this segment
+            double zFront = radius - i * segmentWidth;
+            double zBack = zFront - segmentWidth;
+            double rFront = sqrt(radius * radius - zFront * zFront);
+            double rBack = sqrt(radius * radius - zBack * zBack);
+
+            // Calculate the gray value for this segment
+            double grayValue = 0.5 * (std::abs(2.0 * i / static_cast<double>(numSegments) - 1.0));
+
+            glColor3f(grayValue, grayValue, grayValue);
+
+            glBegin(GL_QUAD_STRIP);
+            for (int j = 0; j <= 360; j += (360 / numSegments)) {
+                double angle = j * M_PI / 180.0;
+                glVertex3f(rFront * cos(angle), rFront * sin(angle), zFront);
+                glVertex3f(rBack * cos(angle), rBack * sin(angle), zBack);
+            }
+            glEnd();
+        }
+
+        glPopMatrix();
+    }
 };
 
 class SpotLightSource {
@@ -503,6 +422,46 @@ class SpotLightSource {
         os << "Direction: " << light.dx << " " << light.dy << " " << light.dz << endl;
         os << "cutOffAngle: " << light.cutOffAngle << endl;
         return os;
+    }
+    void draw() const {
+        // Save the current transformation matrix
+        glPushMatrix();
+
+        // Translate to the position of the light source
+        glTranslated(x, y, z);
+
+        double angle = acos(dz / sqrt(dx * dx + dy * dy + dz * dz)) * 180.0 / M_PI;
+        double axisLength = sqrt(dx * dx + dy * dy);
+        glRotated(angle, -dy / axisLength, dx / axisLength, 0);
+
+        // Draw the cone
+        double height = 25.0;
+        // double baseRadius = tan(cutOffAngle * M_PI / 180.0) * height;
+        double baseRadius = tan(cutOffAngle * M_PI / 180.0) * 10;
+        int slices = 32;
+
+        // Draw curved surface using individual triangles
+        glBegin(GL_TRIANGLES);
+        for (int i = 0; i < slices; ++i) {
+            double theta1 = i * 2.0 * M_PI / slices;
+            double theta2 = (i + 1) * 2.0 * M_PI / slices;
+
+            double x1 = baseRadius * cos(theta1);
+            double y1 = baseRadius * sin(theta1);
+            double x2 = baseRadius * cos(theta2);
+            double y2 = baseRadius * sin(theta2);
+
+            // Apex
+            glColor3f(1.0f, 1.0f, 1.0f);
+            glVertex3f(0.0f, 0.0f, 0.0f);
+            glColor3f(0.5f, 0.5f, 0.5f);
+            glVertex3f(x1, y1, height);
+            glVertex3f(x2, y2, height);
+        }
+        glEnd();
+
+        // Restore the transformation matrix to its previous state
+        glPopMatrix();
     }
 };
 
@@ -527,7 +486,6 @@ void readInputFile(string fileName) {
             fin >> sphere.r >> sphere.g >> sphere.b;
             fin >> sphere.ka >> sphere.kd >> sphere.ks >> sphere.kr;
             fin >> sphere.shine;
-            sphere.buildUnitPositiveX();
             spheres.push_back(sphere);
         } else if (type == "pyramid") {
             Pyramid pyramid;
@@ -644,13 +602,10 @@ void generateRays() {
     for (int i = 0; i < width; i++) {
         for (int j = 0; j < height; j++) {
             // Calculate the 3D point for this pixel in the OpenGL world
-            pointBuffer[i][j] = topLeft + (r * i * du) - (u * j * dv);
-
+            point pt = topLeft + (r * i * du) - (u * j * dv);
             // Generate the ray for this pixel
             rays[i][j].origin = pos;
-            point dir = pointBuffer[i][j] - pos;
-            dir.normalize();
-            rays[i][j].direction = dir;
+            rays[i][j].direction = (pt - pos).normalize();
         }
     }
 }
@@ -658,7 +613,6 @@ void generateRays() {
 void capture() {
     bitmap_image img(width, height);
     img.set_all_channels(0, 0, 0);
-    // now populate pointBuffer with the color of the object that intersects witht the rays
     generateRays();
     for (int i = 0; i < width; i++) {
         for (int j = 0; j < height; j++) {
@@ -670,9 +624,9 @@ void capture() {
                 if (!is.doesIntersect) continue;
                 if (is.t < tMin) {
                     tMin = is.t;
-                    r = sphere.r;
-                    g = sphere.g;
-                    b = sphere.b;
+                    r = sphere.r * sphere.ka;
+                    g = sphere.g * sphere.ka;
+                    b = sphere.b * sphere.ka;
                 }
             }
             for (const auto& pyramid : pyramids) {
@@ -680,9 +634,9 @@ void capture() {
                 if (!is.doesIntersect) continue;
                 if (is.t < tMin) {
                     tMin = is.t;
-                    r = pyramid.r;
-                    g = pyramid.g;
-                    b = pyramid.b;
+                    r = pyramid.r * pyramid.ka;
+                    g = pyramid.g * pyramid.ka;
+                    b = pyramid.b * pyramid.ka;
                 }
             }
             for (const auto& cube : cubes) {
@@ -690,9 +644,9 @@ void capture() {
                 if (!is.doesIntersect) continue;
                 if (is.t < tMin) {
                     tMin = is.t;
-                    r = cube.r;
-                    g = cube.g;
-                    b = cube.b;
+                    r = cube.r * cube.ka;
+                    g = cube.g * cube.ka;
+                    b = cube.b * cube.ka;
                 }
             }
             Intersection is = cboard.intersect(ray);
@@ -702,9 +656,9 @@ void capture() {
                 int ySquare = (int)floor(is.ip.y / cboard.width);
                 bool isWhite = (xSquare + ySquare) % 2 == 0;
                 if (isWhite) {
-                    r = 1;
-                    g = 1;
-                    b = 1;
+                    r = 1 * cboard.ka;
+                    g = 1 * cboard.ka;
+                    b = 1 * cboard.ka;
                 } else {
                     r = 0;
                     g = 0;

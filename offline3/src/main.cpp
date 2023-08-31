@@ -42,6 +42,12 @@ void display() {
     for (const auto& pyramid : pyramids) {
         pyramid.draw();
     }
+    for(const auto &spotLight: spotLights) {
+        spotLight.draw();
+    }
+    for(const auto &normLight: normLights){
+        normLight.draw();
+    }
 
     glutSwapBuffers();  // Render now
 }
@@ -168,7 +174,6 @@ void specialKeyListener(int key, int x, int y) {
     glutPostRedisplay();
 }
 void initGlobalVars() {
-    pointBuffer.resize(width, vector<point>(height));
     rays.resize(width, vector<Ray>(height));
     // camera vectors
     pos = {0, -100, 20};
