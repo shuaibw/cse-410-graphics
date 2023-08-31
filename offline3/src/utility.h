@@ -237,12 +237,12 @@ class Pyramid {
         if (rayTriangleIntersect(ray, v1, v2, v3, t) && t < tMin) {
             tMin = t;
             intersection.doesIntersect = true;
-            normal = (v2 - v1).cross(v3 - v1).normalize();
+            normal = (v3 - v1).cross(v2 - v1).normalize();
         }
         if (rayTriangleIntersect(ray, v1, v3, v4, t) && t < tMin) {
             tMin = t;
             intersection.doesIntersect = true;
-            normal = (v3 - v1).cross(v4 - v1).normalize();
+            normal = (v4 - v1).cross(v1 - v1).normalize();
         }
 
         if (intersection.doesIntersect) {
@@ -327,66 +327,48 @@ class Cube {
         Intersection intersection;
         // check if ray intersects with bottom face
         double t;
-        if (rayQuadIntersect(ray, v0, v1, v2, v3, t)) {
+        double tMin = std::numeric_limits<double>::max();
+        if (rayQuadIntersect(ray, v0, v1, v2, v3, t) && t < tMin) {
+            tMin = t;
             intersection.doesIntersect = true;
-            intersection.t = t;
-            intersection.ip = ray.origin + ray.direction * t;
-            intersection.color = Color(this->r, this->g, this->b);
-            intersection.coeffs = Coeffs(this->ka, this->kd, this->ks, this->kr, this->shine);
             intersection.normal = point(0, 0, -1);
-            return intersection;
         }
         // check if ray intersects with top face
-        if (rayQuadIntersect(ray, v4, v5, v6, v7, t)) {
+        if (rayQuadIntersect(ray, v4, v5, v6, v7, t) && t < tMin) {
+            tMin = t;
             intersection.doesIntersect = true;
-            intersection.t = t;
-            intersection.ip = ray.origin + ray.direction * t;
-            intersection.color = Color(this->r, this->g, this->b);
-            intersection.coeffs = Coeffs(this->ka, this->kd, this->ks, this->kr, this->shine);
             intersection.normal = point(0, 0, 1);
-            return intersection;
         }
         // check if ray intersects with right face
-        if (rayQuadIntersect(ray, v1, v5, v6, v2, t)) {
+        if (rayQuadIntersect(ray, v1, v5, v6, v2, t) && t < tMin) {
+            tMin = t;
             intersection.doesIntersect = true;
-            intersection.t = t;
-            intersection.ip = ray.origin + ray.direction * t;
-            intersection.color = Color(this->r, this->g, this->b);
-            intersection.coeffs = Coeffs(this->ka, this->kd, this->ks, this->kr, this->shine);
             intersection.normal = point(1, 0, 0);
-            return intersection;
         }
         // check if ray intersects with left face
-        if (rayQuadIntersect(ray, v0, v4, v7, v3, t)) {
+        if (rayQuadIntersect(ray, v0, v4, v7, v3, t) && t < tMin) {
+            tMin = t;
             intersection.doesIntersect = true;
-            intersection.t = t;
-            intersection.ip = ray.origin + ray.direction * t;
-            intersection.color = Color(this->r, this->g, this->b);
-            intersection.coeffs = Coeffs(this->ka, this->kd, this->ks, this->kr, this->shine);
             intersection.normal = point(-1, 0, 0);
-            return intersection;
         }
         // check if ray intersects with front face
-        if (rayQuadIntersect(ray, v0, v1, v5, v4, t)) {
+        if (rayQuadIntersect(ray, v0, v1, v5, v4, t) && t < tMin) {
+            tMin = t;
             intersection.doesIntersect = true;
-            intersection.t = t;
-            intersection.ip = ray.origin + ray.direction * t;
-            intersection.color = Color(this->r, this->g, this->b);
-            intersection.coeffs = Coeffs(this->ka, this->kd, this->ks, this->kr, this->shine);
             intersection.normal = point(0, -1, 0);
-            return intersection;
         }
         // check if ray intersects with rear face
-        if (rayQuadIntersect(ray, v3, v2, v6, v7, t)) {
+        if (rayQuadIntersect(ray, v3, v2, v6, v7, t) && t < tMin) {
+            tMin = t;
             intersection.doesIntersect = true;
-            intersection.t = t;
-            intersection.ip = ray.origin + ray.direction * t;
+            intersection.normal = point(0, 1, 0);
+        }
+        if (intersection.doesIntersect) {
+            intersection.t = tMin;
+            intersection.ip = ray.origin + ray.direction * tMin;
             intersection.color = Color(this->r, this->g, this->b);
             intersection.coeffs = Coeffs(this->ka, this->kd, this->ks, this->kr, this->shine);
-            intersection.normal = point(0, 1, 0);
-            return intersection;
         }
-        intersection.doesIntersect = false;
         return intersection;
     }
 };
@@ -673,19 +655,26 @@ Color traceRay(const Ray& ray, int depth) {
         return Color(0, 0, 0);  // Return black if depth is zero
     }
     Intersection closestIntersection = closestIntersectionWithObjects(ray);
-    // closestIntersection.color = closestIntersection.color * closestIntersection.coeffs.ka;
-    // double phong = 0, lambert = 0;
-    // for (const auto& normLight : normLights) {
-    //     point lightSource = point(normLight.x, normLight.y, normLight.z);
-    //     point ip = closestIntersection.ip;
-    //     Ray objToLight = Ray(ip, (lightSource - ip).normalize());
-    //     if (!normLight.illuminates(objToLight)) continue;
+    closestIntersection.color = closestIntersection.color * closestIntersection.coeffs.ka;
+    double phong = 0, lambert = 0;
+    for (const auto& normLight : normLights) {
+        point lightSource = point(normLight.x, normLight.y, normLight.z);
+        point ip = closestIntersection.ip;
+        Ray objToLight = Ray(ip, (lightSource - ip).normalize());
+        if (!normLight.illuminates(objToLight)) continue;
 
-    //     point toSource = objToLight.direction;
-    //     point normal = closestIntersection.ip - point(0, 0, 0);
-    //     double distance = (lightSource - ip).norm();
-    //     double scaleFactor = exp(-normLight.decay * distance * distance);
-    // }
+        point toSource = objToLight.direction;
+        point normal = closestIntersection.normal;
+        double shininess = closestIntersection.coeffs.shine;
+        double distance = (lightSource - ip).norm();
+        double scaleFactor = exp(-normLight.decay * distance * distance);
+        lambert += toSource.dot(normal) * scaleFactor;
+        point reflection = (normal * (2 * normal.dot(toSource)) - toSource).normalize();
+        // phong += pow(reflection.dot(toSource), shininess) * scaleFactor;
+    }
+    closestIntersection.color += closestIntersection.color * closestIntersection.coeffs.kd * lambert;
+    closestIntersection.color += closestIntersection.color * closestIntersection.coeffs.ks * phong;
+
     // for (const auto& spotLight : spotLights) {
     // }
     return closestIntersection.color;

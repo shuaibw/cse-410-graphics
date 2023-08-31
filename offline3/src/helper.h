@@ -80,6 +80,19 @@ class Color {
         temp.b = b * d;
         return temp;
     }
+    Color operator+(const Color& c) const {
+        Color temp;
+        temp.r = r + c.r;
+        temp.g = g + c.g;
+        temp.b = b + c.b;
+        return temp;
+    }
+    Color operator+=(const Color& c) {
+        r += c.r;
+        g += c.g;
+        b += c.b;
+        return *this;
+    }
 };
 
 class Coeffs {
