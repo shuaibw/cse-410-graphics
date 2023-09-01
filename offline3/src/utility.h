@@ -39,6 +39,9 @@ extern point l;    // look/forward direction
 extern point r;    // right direction
 extern point u;    // up direction
 extern bool isAxes;
+extern bool isTexture;
+bitmap_image texture_w;
+bitmap_image texture_b;
 
 double nearPlane, farPlane, fovY, aspectRatio;
 int levelOfRecursion, width, height;
@@ -85,7 +88,30 @@ class CheckerBoard {
         int xSquare = (int)floor(intersection.ip.x / width);
         int ySquare = (int)floor(intersection.ip.y / width);
         bool isWhite = (xSquare + ySquare) % 2 == 0;
-        intersection.color = isWhite ? Color(1, 1, 1) : Color(0, 0, 0);
+
+        Color txColor;
+        if (isTexture) {
+            int x = (int)intersection.ip.x % width;
+            int y = (int)intersection.ip.y % width;
+            if (x < 0) x += width;
+            if (y < 0) y += width;
+            rgb_t color;
+            if (isWhite) {
+                int tx = (int)(((double)x / width) * texture_w.width());
+                int ty = (int)(((double)y / width) * texture_w.height());
+                color = texture_w.get_pixel(tx, ty);
+            } else {
+                int tx = (int)(((double)x / width) * texture_b.width());
+                int ty = (int)(((double)y / width) * texture_b.height());
+                color = texture_b.get_pixel(tx, ty);
+            }
+            txColor.r = color.red / 255.0;
+            txColor.g = color.green / 255.0;
+            txColor.b = color.blue / 255.0;
+            intersection.color = txColor;
+        } else {
+            intersection.color = isWhite ? Color(1, 1, 1) : Color(0, 0, 0);
+        }
         intersection.coeffs = Coeffs(this->ka, this->kd, 0, this->kr, 0);
         intersection.normal = normal;
         return intersection;

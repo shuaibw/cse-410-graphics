@@ -1579,25 +1579,25 @@ private:
 
       std::size_t bitmap_file_size = file_size(file_name_);
 
-      std::size_t bitmap_logical_size = (height_ * width_ * bytes_per_pixel_) +
-                                        (height_ * padding)                   +
-                                         bih.struct_size()                    +
-                                         bfh.struct_size()                    ;
+      // std::size_t bitmap_logical_size = (height_ * width_ * bytes_per_pixel_) +
+      //                                   (height_ * padding)                   +
+      //                                    bih.struct_size()                    +
+      //                                    bfh.struct_size()                    ;
 
-      if (bitmap_file_size != bitmap_logical_size)
-      {
-         std::cerr << "bitmap_image::load_bitmap() ERROR: bitmap_image - "
-                   << "Mismatch between logical and physical sizes of bitmap. "
-                   << "Logical: "  << bitmap_logical_size << " "
-                   << "Physical: " << bitmap_file_size    << std::endl;
+      // if (bitmap_file_size != bitmap_logical_size)
+      // {
+      //    std::cerr << "bitmap_image::load_bitmap() ERROR: bitmap_image - "
+      //              << "Mismatch between logical and physical sizes of bitmap. "
+      //              << "Logical: "  << bitmap_logical_size << " "
+      //              << "Physical: " << bitmap_file_size    << std::endl;
 
-         bfh.clear();
-         bih.clear();
+      //    bfh.clear();
+      //    bih.clear();
 
-         stream.close();
+      //    stream.close();
 
-         return;
-      }
+      //    return;
+      // }
 
       create_bitmap();
 

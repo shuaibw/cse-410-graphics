@@ -17,6 +17,7 @@ point l;    // look/forward direction
 point r;    // right direction
 point u;    // up direction
 bool isAxes = true;
+bool isTexture = false;
 
 /*  Handler for window-repaint event. Call back when the window first appears and
     whenever the window needs to be re-painted. */
@@ -117,6 +118,10 @@ void keyboardListener(unsigned char key, int xx, int yy) {
         case '0':
             capture();
             break;
+        case 32:
+            isTexture = !isTexture;
+            cout << "Texture state: " << isTexture << endl;
+            break;
         default:
             break;
     }
@@ -155,16 +160,17 @@ void specialKeyListener(int key, int x, int y) {
             break;
         case GLUT_KEY_END:
             break;
-
         default:
             break;
     }
     glutPostRedisplay();
 }
 void initGlobalVars() {
+    texture_w = bitmap_image("texture_w.bmp");
+    texture_b = bitmap_image("../Assignment-RayTracer/texture_b.bmp");
     rays.resize(width, vector<Ray>(height));
     // camera vectors
-    pos = {0, -100, 20};
+    pos = {0, -170, 40};
     l = {0, 1, 0};
     u = {0, 0, 1};
     l.normalize();
