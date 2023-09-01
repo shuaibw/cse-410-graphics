@@ -71,7 +71,7 @@ class CheckerBoard {
         point ip = origin + direction * t;
         double dist = (ip - origin).norm();
         double theta = l.angleBetween(ip - origin);
-        if (t < 0 || dist > (farPlane / cos(theta))) {
+        if (fabs(t) < EPSILON || dist > (farPlane / cos(theta))) {
             intersection.doesIntersect = false;
             return intersection;
         }
@@ -144,6 +144,7 @@ class Sphere {
         } else {
             intersection.t = min(t1, t2);
         }
+        intersection.t = intersection.t - EPSILON;
         intersection.ip = origin + direction * intersection.t;
         intersection.doesIntersect = true;
         intersection.color = Color(this->r, this->g, this->b);
@@ -247,7 +248,7 @@ class Pyramid {
         }
 
         if (intersection.doesIntersect) {
-            intersection.t = tMin;
+            intersection.t = tMin - EPSILON;
             intersection.ip = ray.origin + ray.direction * tMin;
             intersection.color = Color(this->r, this->g, this->b);
             intersection.coeffs = Coeffs(this->ka, this->kd, this->ks, this->kr, this->shine);
@@ -365,7 +366,7 @@ class Cube {
             intersection.normal = point(0, 1, 0);
         }
         if (intersection.doesIntersect) {
-            intersection.t = tMin;
+            intersection.t = tMin -EPSILON;
             intersection.ip = ray.origin + ray.direction * tMin;
             intersection.color = Color(this->r, this->g, this->b);
             intersection.coeffs = Coeffs(this->ka, this->kd, this->ks, this->kr, this->shine);
@@ -654,7 +655,6 @@ Color traceRay(const Ray& ray, int depth) {
         return Color(0, 0, 0);  // Return black if depth is zero
     }
     Intersection closestIntersection = closestIntersectionWithObjects(ray);
-    closestIntersection.color = closestIntersection.color * closestIntersection.coeffs.ka;
     double phong = 0, lambert = 0;
     for (const auto& normLight : normLights) {
         point lightSource = point(normLight.x, normLight.y, normLight.z);
@@ -692,8 +692,8 @@ Color traceRay(const Ray& ray, int depth) {
         reflection.normalize();
         phong += pow(reflection.dot(toSource), shininess) * scaleFactor;
     }
-    closestIntersection.color += closestIntersection.color * closestIntersection.coeffs.kd * lambert;
-    closestIntersection.color += closestIntersection.color * closestIntersection.coeffs.ks * phong;
+    
+    closestIntersection.color = closestIntersection.color * (closestIntersection.coeffs.ka + lambert * closestIntersection.coeffs.kd + phong * closestIntersection.coeffs.ks);
 
     return closestIntersection.color;
 }
