@@ -366,8 +366,8 @@ class Cube {
             intersection.normal = point(0, 1, 0);
         }
         if (intersection.doesIntersect) {
-            intersection.t = tMin -EPSILON;
-            intersection.ip = ray.origin + ray.direction * tMin;
+            intersection.t = tMin - EPSILON;
+            intersection.ip = ray.origin + ray.direction * (tMin - EPSILON);
             intersection.color = Color(this->r, this->g, this->b);
             intersection.coeffs = Coeffs(this->ka, this->kd, this->ks, this->kr, this->shine);
         }
@@ -655,45 +655,40 @@ Color traceRay(const Ray& ray, int depth) {
         return Color(0, 0, 0);  // Return black if depth is zero
     }
     Intersection closestIntersection = closestIntersectionWithObjects(ray);
+    point normal = closestIntersection.normal;
+    double shininess = closestIntersection.coeffs.shine;
+    point ip = closestIntersection.ip;
+    point incident = ray.direction;
+    point reflection = incident - normal * (2 * incident.dot(normal));
+    reflection.normalize();
+
     double phong = 0, lambert = 0;
     for (const auto& normLight : normLights) {
         point lightSource = point(normLight.x, normLight.y, normLight.z);
-        point ip = closestIntersection.ip;
-        Ray objToLight = Ray(ip, (lightSource - ip).normalize());
+        point toSource = (lightSource - ip).normalize();
+        Ray objToLight = Ray(ip, toSource);
         if (!normLight.illuminates(objToLight)) continue;
 
-        point toSource = objToLight.direction;
-        point normal = closestIntersection.normal;
-        double shininess = closestIntersection.coeffs.shine;
         double distance = (lightSource - ip).norm();
-        if (distance < EPSILON) continue;
         double scaleFactor = exp(-normLight.decay * distance * distance);
         lambert += max(toSource.dot(normal) * scaleFactor, 0.0);
-        point incident = ray.direction;
-        point reflection = incident - normal * (2 * incident.dot(normal));
-        reflection.normalize();
         phong += pow(reflection.dot(toSource), shininess) * scaleFactor;
     }
 
     for (const auto& spotLight : spotLights) {
         point lightSource = point(spotLight.x, spotLight.y, spotLight.z);
-        point ip = closestIntersection.ip;
-        Ray objToLight = Ray(ip, (lightSource - ip).normalize());
+        point toSource = (lightSource - ip).normalize();
+        Ray objToLight = Ray(ip, toSource);
         if (!spotLight.illuminates(objToLight)) continue;
 
-        point toSource = objToLight.direction;
-        point normal = closestIntersection.normal;
-        double shininess = closestIntersection.coeffs.shine;
         double distance = (lightSource - ip).norm();
         double scaleFactor = exp(-spotLight.decay * distance * distance);
         lambert += max(toSource.dot(normal) * scaleFactor, 0.0);
-        point incident = ray.direction;
-        point reflection = incident - normal * (2 * incident.dot(normal));
-        reflection.normalize();
         phong += pow(reflection.dot(toSource), shininess) * scaleFactor;
     }
-    
+    Color reflectedColor = traceRay(Ray(ip, reflection), depth - 1);
     closestIntersection.color = closestIntersection.color * (closestIntersection.coeffs.ka + lambert * closestIntersection.coeffs.kd + phong * closestIntersection.coeffs.ks);
+    closestIntersection.color += (reflectedColor * closestIntersection.coeffs.kr);
 
     return closestIntersection.color;
 }
