@@ -91,20 +91,15 @@ class CheckerBoard {
 
         Color txColor;
         if (isTexture) {
-            int x = (int)intersection.ip.x % width;
-            int y = (int)intersection.ip.y % width;
-            if (x < 0) x += width;
-            if (y < 0) y += width;
             rgb_t color;
-            if (isWhite) {
-                int tx = (int)(((double)x / width) * texture_w.width());
-                int ty = (int)(((double)y / width) * texture_w.height());
-                color = texture_w.get_pixel(tx, ty);
-            } else {
-                int tx = (int)(((double)x / width) * texture_b.width());
-                int ty = (int)(((double)y / width) * texture_b.height());
-                color = texture_b.get_pixel(tx, ty);
-            }
+            bitmap_image& img = isWhite ? texture_w : texture_b;
+            int tx = (intersection.ip.x / width) * img.width();
+            int ty = (intersection.ip.y / width) * img.height();
+            if (tx < 0 ) tx += img.width();
+            if (ty < 0 ) ty += img.height();
+            tx = tx % img.width();
+            ty = ty % img.height();
+            color = img.get_pixel(tx, ty);
             txColor.r = color.red / 255.0;
             txColor.g = color.green / 255.0;
             txColor.b = color.blue / 255.0;
@@ -683,7 +678,7 @@ Color traceRay(const Ray& ray, int depth) {
     Intersection closestIntersection = closestIntersectionWithObjects(ray);
     point normal = closestIntersection.normal;
     double shininess = closestIntersection.coeffs.shine;
-    point ip = closestIntersection.ip;
+    point ip = closestIntersection.ip + normal * EPSILON;
     point incident = ray.direction;
     point reflection = incident - normal * (2 * incident.dot(normal));
     reflection.normalize();
@@ -768,7 +763,5 @@ bool checkIntersection(const Ray& ray) {
         Intersection is = cube.intersect(ray);
         if (is.doesIntersect) return true;
     }
-    Intersection is = cboard.intersect(ray);
-    if (is.doesIntersect) return true;
     return false;
 }

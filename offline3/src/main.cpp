@@ -167,7 +167,7 @@ void specialKeyListener(int key, int x, int y) {
 }
 void initGlobalVars() {
     texture_w = bitmap_image("texture_w.bmp");
-    texture_b = bitmap_image("../Assignment-RayTracer/texture_b.bmp");
+    texture_b = bitmap_image("texture_b.bmp");
     rays.resize(width, vector<Ray>(height));
     // camera vectors
     pos = {0, -170, 40};
